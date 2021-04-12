@@ -61,11 +61,13 @@ node_t make_node(node_nature nature, int nops, ...);
 %left TOK_BAND
 %left TOK_EQ TOK_NE
 %left TOK_GT TOK_LT TOK_GE TOK_LE
+%left TOK_SRL TOK_SRA TOK_SLL
 
+/* a / b / c = (a / b) / c et a - b - c = (a - b) - c */
+%left TOK_PLUS TOK_MINUS
+%left TOK_MUL TOK_DIV TOK_MOD
 
-
-
-
+%left TOK_UMINUS TOK_NOT TOK_BNO
 
 %type <intval> TOK_INTVAL;
 %type <strval> TOK_IDENT TOK_STRING;
