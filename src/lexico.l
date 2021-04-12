@@ -47,6 +47,7 @@ COMMENTAIRE     \/\/.*
 "true"          return TOK_TRUE;
 "false"         return TOK_FALSE;
 "if"            return TOK_IF;
+"then"          return TOK_THEN;
 "else"          return TOK_ELSE;
 "while"         return TOK_WHILE;
 "for"           return TOK_FOR;
@@ -89,7 +90,10 @@ COMMENTAIRE     \/\/.*
 
 {ENTIER} {
                 /* A completer : affecter yylval.intval et faire des verifications */
-                yylval.intval = strdup(yytext);
+                if (yytext[1] == 'x')
+                    yylval.intval = strtol(yytext+2, NULL, 16);
+                else
+                    yylval.intval = atoi(yytext);
                 return TOK_INTVAL;
 }
 
