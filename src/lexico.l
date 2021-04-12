@@ -53,6 +53,35 @@ COMMENTAIRE     \/\/.*
 "do"            return TOK_DO;
 "print"         return TOK_PRINT;
 
+"+"             return TOK_PLUS;
+"-"             return TOK_MINUS;
+"*"             return TOK_MUL;
+"/"             return TOK_DIV;
+"%"             return TOK_MOD;
+">"             return TOK_GT;
+"<"             return TOK_LT;
+"!"             return TOK_NOT;
+"~"             return TOK_BNOT;
+"&"             return TOK_BAND;
+"|"             return TOK_BOR;
+"^"             return TOK_BXOR;
+"="             return TOK_AFFECT;
+";"             return TOK_SEMICOL;
+","             return TOK_COMMA;
+"("             return TOK_LPAR;
+")"             return TOK_RPAR;
+"{"             return TOK_LACC;
+"}"             return TOK_RACC;
+">>"            return TOK_SRL;
+">>>"           return TOK_SRA;
+"<<"            return TOK_SLL;
+">="            return TOK_GE;
+"<="            return TOK_LE;
+"=="            return TOK_EQ;
+"!="            return TOK_NE;
+"&&"            return TOK_AND;
+"||"            return TOK_OR;
+
 {IDF} {
                 yylval.strval = strdup(yytext);
                 return TOK_IDENT;
@@ -65,6 +94,7 @@ COMMENTAIRE     \/\/.*
 
 {CHAINE} {
                 /* A completer : affecter yylval.strval */
+                yylval.strval = strdup(yytext);
                 return TOK_STRING;
 }
 
