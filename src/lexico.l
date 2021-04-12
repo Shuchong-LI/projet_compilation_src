@@ -29,10 +29,10 @@ extern int yydebug;
 
 LETTRE          [a-zA-Z]
 /* A completer ; fausses definitions pour passer la compilation */
-IDF             A
-ENTIER          0
-CHAINE          A
-COMMENTAIRE     A
+IDF             [a-zA-Z]+[a-zA-Z0-9]*
+ENTIER          0|[1-9]+[0-9]*|0x[0-9a-fA-F]+
+CHAINE          \"((\\\")|[^\"])*\"
+COMMENTAIRE     \/\/.*
 
 %%
 
