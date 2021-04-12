@@ -89,6 +89,7 @@ COMMENTAIRE     \/\/.*
 
 {ENTIER} {
                 /* A completer : affecter yylval.intval et faire des verifications */
+                yylval.intval = strdup(yytext);
                 return TOK_INTVAL;
 }
 
