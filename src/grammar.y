@@ -43,8 +43,25 @@ node_t make_node(node_nature nature, int nops, ...);
 
 /* Definir les token ici avec leur associativite, dans le bon ordre */
 %token TOK_VOID TOK_INT TOK_INTVAL TOK_BOOL TOK_TRUE TOK_FALSE
-
+%token TOK_IDENT TOK_IF TOK_ELSE TOK_WHILE TOK_FOR TOK_PRINT
+%token TOK_SEMICOL TOK_COMMA TOK_LPAR TOK_RPAR TOK_LACC TOK_RACC
+%token TOK_STRING TOK_DO
 /* A completer */
+
+%nonassoc TOK_THEN
+%nonassoc TOK_ELSE
+
+/* a = b = c + d <=> b = c + d; a = b; */
+%right TOK_AFFECT
+
+%left TOK_OR
+%left TOK_AND
+%left TOK_BOR
+%left TOK_BXOR
+%left TOK_BAND
+%left TOK_EQ TOK_NE
+%left TOK_GT TOK_LT TOK_GE TOK_LE
+
 
 
 
@@ -96,7 +113,7 @@ void analyse_tree(node_t root) {
         analyse_passe_1(root);
         //dump_tree(root, "apres_passe_1.dot");
         if (!stop_after_verif) {
-            create_program(); 
+            create_program();
             gen_code_passe_2(root);
             dump_mips_program(outfile);
             free_program();
@@ -116,4 +133,3 @@ void yyerror(node_t * program_root, char * s) {
     fprintf(stderr, "Error line %d: %s\n", yylineno, s);
     exit(1);
 }
-
