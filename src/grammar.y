@@ -92,7 +92,7 @@ program:
 listdecl:
         listdeclnonnull
         {
-
+            $$ = $1;
         }
         |
         {
@@ -104,8 +104,22 @@ vardecl:
         type listtypedecl TOK_SEMICOL
         ;
 
+listtypedecl:
+        decl
+        {
+            $$ = $1;
+        }
+        | listtypedecl TOK_COMMA decl
+        {
+            $$ = make_node(NODE_LIST, 2, $1, $3);
+        }
+        ;
+
 type:
         TOK_INT
+        {
+            
+        }
         | TOK_BOOL
         | TOK_VOID
         ;
@@ -124,6 +138,17 @@ maindecl:
 /* A completer et/ou remplacer avec d'autres fonctions */
 node_t make_node(node_nature nature, int nops, ...) {
     va_list ap;
+    va_start(ap, node_t);
+    node_t node = (node_t)malloc(sizeof(node_s));
+    if (node == NULL)
+        return NULL;
+    node->nature = nature;
+    node->lineno = yylineno;
+    node->nops = nops;
+
+    switch (nature) {
+    case NODE_PROGRAM:
+    }
 
     return NULL;
 }
