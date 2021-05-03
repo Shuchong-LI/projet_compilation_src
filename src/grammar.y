@@ -138,16 +138,26 @@ maindecl:
 /* A completer et/ou remplacer avec d'autres fonctions */
 node_t make_node(node_nature nature, int nops, ...) {
     va_list ap;
-    va_start(ap, node_t);
+    va_start(ap, nops);
     node_t node = (node_t)malloc(sizeof(node_s));
     if (node == NULL)
         return NULL;
     node->nature = nature;
     node->lineno = yylineno;
     node->nops = nops;
+    node->opr = (node_t*)malloc(nops * sizeof(node_t));
+    for (int i = 0; i < nops; i++) {
+        node->opr[i] = va_arg(ap, node_nature);
+    }
+    va_end(ap);
 
     switch (nature) {
-    case NODE_PROGRAM:
+    case NODE_IDENT:
+        if (node->ident == NULL)
+            node->ident = strdup(yylval);
+        break;
+    case NODE_TYPE:
+
     }
 
     return NULL;
