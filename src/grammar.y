@@ -262,7 +262,7 @@ expr:
         }
         | TOK_MINUS expr %prec TOK_UMINUS
         {
-            $$ = make_node(NODE_MINUS, $1, $3); // pbm ici
+            $$ = make_node(NODE_UMINUS, 1, $2);
         }
         | expr TOK_GE expr
         {
