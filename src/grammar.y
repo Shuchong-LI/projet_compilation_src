@@ -400,6 +400,7 @@ node_t make_node(node_nature nature, int nops, ...) {
         break;
     case NODE_STRINGVAL:
         va_start(ap, nops + 1);
+        break;
     default:
         va_start(ap, nops);
     }
@@ -434,7 +435,7 @@ node_t make_node(node_nature nature, int nops, ...) {
 
     va_end(ap);
 
-    return NULL;
+    return node;
 }
 
 
