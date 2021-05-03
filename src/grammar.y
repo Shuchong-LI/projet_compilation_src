@@ -409,12 +409,13 @@ node_t make_node(node_nature nature, int nops, ...) {
     node->nops = nops;
     node->opr = (node_t*)malloc(nops * sizeof(node_t));
     for (int i = 0; i < nops; i++) {
-        node->opr[i] = va_arg(ap, node_nature);
+        node->opr[i] = va_arg(ap, node_t);
     }
 
+    char *tmp;
     switch (nature) {
     case NODE_IDENT:
-        char *tmp = va_arg(ap, char *);
+        tmp = va_arg(ap, char *);
         node->ident = strdup(tmp);
         break;
     case NODE_TYPE:
@@ -427,10 +428,9 @@ node_t make_node(node_nature nature, int nops, ...) {
         node->value = va_args(ap, int);
         break;
     case NODE_STRINGVAL:
-        char *tmp = va_arg(ap, char *);
+        tmp = va_arg(ap, char *);
         node->str = strdup(tmp);
         break;
-    default:
     }
 
     va_end(ap);
