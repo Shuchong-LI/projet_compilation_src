@@ -234,91 +234,91 @@ block:
 expr:
         expr TOK_MUL expr
         {
-            $$ = make_node(NODE_MUL, $1, $3);
+            $$ = make_node(NODE_MUL, 2, $1, $3);
         }
         | expr TOK_DIV expr
         {
-            $$ = make_node(NODE_DIV, $1, $3);
+            $$ = make_node(NODE_DIV, 2, $1, $3);
         }
         | expr TOK_PLUS expr
         {
-            $$ = make_node(NODE_PLUS, $1, $3);
+            $$ = make_node(NODE_PLUS, 2, $1, $3);
         }
         | expr TOK_MINUS expr
         {
-            $$ = make_node(NODE_MINUS, $1, $3);
+            $$ = make_node(NODE_MINUS, 2, $1, $3);
         }
         | expr TOK_MOD expr
         {
-            $$ = make_node(NODE_MOD, $1, $3);
+            $$ = make_node(NODE_MOD, 2, $1, $3);
         }
         | expr TOK_LT expr
         {
-            $$ = make_node(NODE_LT, $1, $3);
+            $$ = make_node(NODE_LT, 2, $1, $3);
         }
         | expr TOK_GT expr
         {
-            $$ = make_node(NODE_GT, $1, $3);
+            $$ = make_node(NODE_GT, 2, $1, $3);
         }
         | TOK_MINUS expr %prec TOK_UMINUS
         {
-            $$ = make_node(NODE_MINUS, $1, $3);
+            $$ = make_node(NODE_MINUS, $1, $3); // pbm ici
         }
         | expr TOK_GE expr
         {
-            $$ = make_node(NODE_GE, $1, $3);
+            $$ = make_node(NODE_GE, 2, $1, $3);
         }
         | expr TOK_LE expr
         {
-            $$ = make_node(NODE_LE, $1, $3);
+            $$ = make_node(NODE_LE, 2, $1, $3);
         }
         | expr TOK_EQ expr
         {
-            $$ = make_node(NODE_EQ, $1, $3);
+            $$ = make_node(NODE_EQ, 2, $1, $3);
         }
         | expr TOK_NE expr
         {
-            $$ = make_node(NODE_NE, $1, $3);
+            $$ = make_node(NODE_NE, 2, $1, $3);
         }
         | expr TOK_AND expr
         {
-            $$ = make_node(NODE_AND, $1, $3);
+            $$ = make_node(NODE_AND, 2, $1, $3);
         }
         | expr TOK_OR expr
         {
-            $$ = make_node(NODE_OR, $1, $3);
+            $$ = make_node(NODE_OR, 2, $1, $3);
         }
         | expr TOK_BAND expr
         {
-            $$ = make_node(NODE_BAND, $1, $3);
+            $$ = make_node(NODE_BAND, 2, $1, $3);
         }
         | expr TOK_BOR expr
         {
-            $$ = make_node(NODE_BOR, $1, $3);
+            $$ = make_node(NODE_BOR, 2, $1, $3);
         }
         | expr TOK_BXOR expr
         {
-            $$ = make_node(NODE_BXOR, $1, $3);
+            $$ = make_node(NODE_BXOR, 2, $1, $3);
         }
         | expr TOK_SRL expr
         {
-            $$ = make_node(NODE_SRL, $1, $3);
+            $$ = make_node(NODE_SRL, 2, $1, $3);
         }
         | expr TOK_SRA expr
         {
-            $$ = make_node(NODE_SRA, $1, $3);
+            $$ = make_node(NODE_SRA, 2, $1, $3);
         }
         | expr TOK_SLL expr
         {
-            $$ = make_node(NODE_SLL, $1, $3);
+            $$ = make_node(NODE_SLL, 2, $1, $3);
         }
         | TOK_NOT expr
         {
-            $$ = make_node(NODE_NOT, $1, $3);
+            $$ = make_node(NODE_NOT, 1, $2);
         }
         | TOK_BNOT expr
         {   
-            $$ = make_node(NODE_BNOT, $1, $3);
+            $$ = make_node(NODE_BNOT, 1, $2);
         }
         | TOK_LPAR expr TOK_RPAR
         {
@@ -326,11 +326,11 @@ expr:
         }
         | ident TOK_AFFECT expr
         {
-            $$ = make_node(NODE_AFFECT, $1, $3);
+            $$ = make_node(NODE_AFFECT, 2, $3);
         }
         | TOK_INTVAL
         {
-            $$ = make_node(NODE_INTVAL, $1, $3);
+            $$ = make_node(NODE_INTVAL, 0, $1);
         }
         | TOK_TRUE
         {
