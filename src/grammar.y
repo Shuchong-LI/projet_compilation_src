@@ -140,15 +140,15 @@ decl:
 type:
         TOK_INT
         {
-            $$ = make_node(NODE_INTVAL, 0);
+            $$ = make_node(NODE_TYPE, 0, TYPE_INT);
         }
         | TOK_BOOL
         {
-            $$ = make_node(NODE_BOOLVAL, 0);
+            $$ = make_node(NODE_TYPE, 0, TYPE_BOOL);
         }
         | TOK_VOID
         {
-            $$ = make_node(NONE, 0);
+            $$ = make_node(NODE_TYPE, 0, TYPE_VOID);
         }
         ;
 
@@ -322,23 +322,23 @@ expr:
         }
         | TOK_LPAR expr TOK_RPAR
         {
-            
+            $$ = $2
         }
         | ident TOK_AFFECT expr
         {
-
+            $$ = make_node(NODE_AFFECT, $1, $3);
         }
         | TOK_INTVAL
         {
-
+            $$ = make_node(NODE_INTVAL, $1, $3);
         }
         | TOK_TRUE
         {
-
+            $$ = make_node(NODE_BOOLVAL, 0, 1);
         }
         | TOK_FALSE
         {
-
+            $$ = make_node(NODE_BOOLVAL, 0, 0);
         }
         | ident
         {
