@@ -325,11 +325,11 @@ expr:
         }
         | ident TOK_AFFECT expr
         {
-            $$ = make_node(NODE_AFFECT, 2, $3);
+            $$ = make_node(NODE_AFFECT, 2, $1, $3);
         }
         | TOK_INTVAL
         {
-            $$ = make_node(NODE_INTVAL, 0, $1);
+            $$ = make_node(NODE_INTVAL, 0, yylval.intval);
         }
         | TOK_TRUE
         {
@@ -363,14 +363,14 @@ paramprint:
         }
         | TOK_STRING
         {
-            $$ = make_node(NODE_STRINGVAL, 0);
+            $$ = make_node(NODE_STRINGVAL, 0, yylval.strval);
         }
         ;
 
 ident:
         TOK_IDENT
         {
-            $$ = make_node(NODE_IDENT, 0, $1);
+            $$ = make_node(NODE_IDENT, 0, yylval.strval);
         }
         ;
 

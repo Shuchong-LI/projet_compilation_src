@@ -21,7 +21,6 @@ bool stop_after_verif = false;
 extern int yydebug;
 #endif
 
-
 %}
 
 %option yylineno
@@ -90,10 +89,12 @@ COMMENTAIRE     \/\/.*
 
 {ENTIER} {
                 /* A completer : affecter yylval.intval et faire des verifications */
+                /*
                 if (yytext[1] == 'x')
                     yylval.intval = strtol(yytext+2, NULL, 16);
                 else
                     yylval.intval = atoi(yytext);
+                    */
                 return TOK_INTVAL;
 }
 
@@ -132,6 +133,7 @@ int main(int argc, char ** argv) {
     yyin = fopen(infile, "r");
     yyparse(&program_root);
     fclose(yyin);
+    check_program_tree(program_root);
     analyse_tree(program_root);
     yylex_destroy();
     return 0;
