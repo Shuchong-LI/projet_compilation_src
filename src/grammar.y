@@ -92,7 +92,7 @@ program:
 listdecl:
         listdeclnonnull
         {
-            $$ = $1;    
+            $$ = $1;
         }
         |
         {
@@ -227,7 +227,7 @@ inst:
 block:
         TOK_LACC listdecl listinst TOK_RACC
         {
-
+            $$ = make_node(NODE_BLOCK, 2, $2, $3);
         }
         ;
 
@@ -365,10 +365,9 @@ paramprint:
 ident:
         TOK_IDENT
         {
-            $$ = make_node(NODE_IDENT, 0);
+            $$ = make_node(NODE_IDENT, 0, $1);
         }
         ;
-        
 
 
 %%
