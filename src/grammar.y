@@ -176,7 +176,7 @@ maindecl:
 listinst:
         listinstnonnull
         {
-
+            $$ = $1
         }
         |
         {
@@ -187,11 +187,11 @@ listinst:
 listinstnonnull:
         inst
         {
-
+            $$ = $1
         }
         | listinstnonnull inst
         {
-
+            $$ = make_node(NODE_LIST, 2, $1, $2);
         }
         ;
 
@@ -352,7 +352,7 @@ expr:
         }
         | ident
         {
-
+            $$ = $1;
         }
         ;
 
