@@ -215,7 +215,7 @@ inst:
         }
         | TOK_SEMICOL
         {
-            //$$ = NULL;
+            $$ = NULL;
         }
         | TOK_PRINT TOK_LPAR listparamprint TOK_RPAR TOK_SEMICOL
         {
