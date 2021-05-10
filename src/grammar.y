@@ -113,6 +113,9 @@ listdeclnonnull:
 
 vardecl:
         type listtypedecl TOK_SEMICOL
+        {
+            $$ = make_node(NODE_DECL, 2, $1, $2);
+        }
         ;
 
 listtypedecl:
@@ -153,13 +156,20 @@ type:
         ;
 
 listdeclnonnull:
-            { $$ = NULL; }
+        vardecl
+        {
+            $$ = $1;
+        }
+        | listdeclnonnull vardecl
+        {
+            $$ = make_node(NODE_LIST, 2, $1, $2);
+        }
         ;
 
 maindecl:
         type ident TOK_LPAR TOK_RPAR block
         {
-
+            $$ = make_node(NODE_FUNC, 3, $1, $2, $5);
         }
         ;
 
