@@ -103,11 +103,11 @@ listdecl:
 listdeclnonnull: 
         vardecl
         {
-            
+            $$ = $1;
         }
         | listdeclnonnull vardecl
         {
-
+            $$ = make_node(NODE_LIST, 2, $1, $2);
         }
         ;
 
