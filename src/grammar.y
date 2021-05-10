@@ -118,6 +118,21 @@ vardecl:
         }
         ;
 
+type:
+        TOK_INT
+        {
+            $$ = make_node(NODE_TYPE, 0, TYPE_INT);
+        }
+        | TOK_BOOL
+        {
+            $$ = make_node(NODE_TYPE, 0, TYPE_BOOL);
+        }
+        | TOK_VOID
+        {
+            $$ = make_node(NODE_TYPE, 0, TYPE_VOID);
+        }
+        ;
+
 listtypedecl:
         decl
         {
@@ -140,32 +155,6 @@ decl:
         }
         ;
 
-type:
-        TOK_INT
-        {
-            $$ = make_node(NODE_TYPE, 0, TYPE_INT);
-        }
-        | TOK_BOOL
-        {
-            $$ = make_node(NODE_TYPE, 0, TYPE_BOOL);
-        }
-        | TOK_VOID
-        {
-            $$ = make_node(NODE_TYPE, 0, TYPE_VOID);
-        }
-        ;
-
-listdeclnonnull:
-        vardecl
-        {
-            $$ = $1;
-        }
-        | listdeclnonnull vardecl
-        {
-            $$ = make_node(NODE_LIST, 2, $1, $2);
-        }
-        ;
-
 maindecl:
         type ident TOK_LPAR TOK_RPAR block
         {
@@ -176,7 +165,7 @@ maindecl:
 listinst:
         listinstnonnull
         {
-            $$ = $1
+            $$ = $1;
         }
         |
         {
@@ -187,7 +176,7 @@ listinst:
 listinstnonnull:
         inst
         {
-            $$ = $1
+            $$ = $1;
         }
         | listinstnonnull inst
         {
@@ -440,7 +429,7 @@ node_t make_node(node_nature nature, int nops, ...) {
         node->value = va_arg(ap, int);
         break;
     case NODE_BOOLVAL:
-        node->value = va_args(ap, int);
+        node->value = va_arg(ap, int);
         break;
     case NODE_STRINGVAL:
         tmp = va_arg(ap, char *);
