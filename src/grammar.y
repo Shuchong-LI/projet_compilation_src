@@ -96,7 +96,7 @@ listdecl:
         }
         |
         {
-            
+            $$ = NULL;
         }
         ;
 
@@ -114,7 +114,7 @@ listdeclnonnull:
 vardecl:
         type listtypedecl TOK_SEMICOL
         {
-            $$ = make_node(NODE_DECL, 2, $1, $2);
+            $$ = make_node(NODE_DECLS, 2, $1, $2);
         }
         ;
 
@@ -147,7 +147,7 @@ listtypedecl:
 decl:
         ident
         {
-            $$ = $1;
+            $$ = make_node(NODE_DECL, 2, $1, NULL);
         }
         | ident TOK_AFFECT expr
         {
@@ -169,7 +169,7 @@ listinst:
         }
         |
         {
-
+            $$ = NULL;
         }
         ;
 
@@ -215,7 +215,7 @@ inst:
         }
         | TOK_SEMICOL
         {
-
+            //$$ = NULL;
         }
         | TOK_PRINT TOK_LPAR listparamprint TOK_RPAR TOK_SEMICOL
         {
