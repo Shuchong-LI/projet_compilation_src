@@ -103,7 +103,7 @@ listdecl:
 listdeclnonnull: 
         vardecl
         {
-
+            
         }
         | listdeclnonnull vardecl
         {
@@ -357,9 +357,12 @@ listparamprint:
 paramprint:
         ident
         {
-
+            $$ = $1
         }
         | TOK_STRING
+        {
+
+        }
         ;
 
 ident:
