@@ -103,11 +103,11 @@ listdecl:
 listdeclnonnull: 
         vardecl
         {
-            
+            $$ = $1;          
         }
         | listdeclnonnull vardecl
         {
-
+        // ici jsp
         }
         ;
 
@@ -129,11 +129,11 @@ listtypedecl:
 decl:
         ident
         {
-        
+            $$ = $1;
         }
         | ident TOK_AFFECT expr
         {
-
+            $$ = make_node(NODE_DECL, 2, $1, $3);
         }
         ;
 
@@ -322,7 +322,7 @@ expr:
         }
         | TOK_LPAR expr TOK_RPAR
         {
-            $$ = $2
+            $$ = $2;
         }
         | ident TOK_AFFECT expr
         {
@@ -349,18 +349,18 @@ expr:
 listparamprint:
         listparamprint TOK_COMMA paramprint
         {
-            $$ = make_node(NODE_LIST, 2, $1, $2);
+            $$ = make_node(NODE_LIST, 2, $1, $3);
         }
         | paramprint
         {
-            $$ = $1
+            $$ = $1;
         }
         ;
 
 paramprint:
         ident
         {
-            $$ = $1
+            $$ = $1;
         }
         | TOK_STRING
         {
