@@ -92,7 +92,7 @@ program:
 listdecl:
         listdeclnonnull
         {
-            $$ = $1;    
+            $$ = $1;
         }
         |
         {
@@ -103,11 +103,11 @@ listdecl:
 listdeclnonnull: 
         vardecl
         {
-            $$ = $1;          
+            $$ = $1;
         }
         | listdeclnonnull vardecl
         {
-        // ici jsp
+            $$ = make_node(NODE_LIST, 2, $1, $2);
         }
         ;
 
@@ -188,31 +188,31 @@ listinstnonnull:
 inst:
         expr TOK_SEMICOL
         {
-
+            $$ = $1;
         }
         | TOK_IF TOK_LPAR expr TOK_RPAR inst TOK_ELSE inst
         {
-
+            $$ = make_node(NODE_IF, 3, $3, $5, $7);
         }
         | TOK_IF TOK_LPAR expr TOK_RPAR inst %prec TOK_THEN
         {
-
+            $$ = make_node(NODE_IF, 2, $3, 5);
         }
         | TOK_WHILE TOK_LPAR expr TOK_RPAR inst
         {
-
+            $$ = make_node(NODE_WHILE, 2, $3, $5);
         }
         | TOK_FOR TOK_LPAR expr TOK_SEMICOL expr TOK_SEMICOL expr TOK_RPAR inst
         {
-
+            $$ = make_node(NODE_FOR, 4, $3, $5, $7, $9);
         }
         | TOK_DO inst TOK_WHILE TOK_LPAR expr TOK_RPAR TOK_SEMICOL
         {
-
+            $$ = make_node(NODE_DOWHILE, 2, $2, $5);
         }
         | block
         {
-
+            $$ = $1;
         }
         | TOK_SEMICOL
         {
@@ -220,14 +220,14 @@ inst:
         }
         | TOK_PRINT TOK_LPAR listparamprint TOK_RPAR TOK_SEMICOL
         {
-
+            $$ = make_node(NODE_PRINT, 1, $3);
         }
         ;
 
 block:
         TOK_LACC listdecl listinst TOK_RACC
         {
-
+            $$ = make_node(NODE_BLOCK, 2, $2, $3);
         }
         ;
 
@@ -371,10 +371,9 @@ paramprint:
 ident:
         TOK_IDENT
         {
-            $$ = make_node(NODE_IDENT, 0);
+            $$ = make_node(NODE_IDENT, 0, $1);
         }
         ;
-        
 
 
 %%
