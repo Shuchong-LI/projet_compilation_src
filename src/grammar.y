@@ -349,9 +349,12 @@ expr:
 listparamprint:
         listparamprint TOK_COMMA paramprint
         {
-
+            $$ = make_node(NODE_LIST, 2, $1, $2);
         }
         | paramprint
+        {
+            $$ = $1
+        }
         ;
 
 paramprint:
@@ -361,7 +364,7 @@ paramprint:
         }
         | TOK_STRING
         {
-
+            $$ = make_node(NODE_STRINGVAL, 0);
         }
         ;
 
