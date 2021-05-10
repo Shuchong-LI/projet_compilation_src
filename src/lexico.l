@@ -89,12 +89,10 @@ COMMENTAIRE     \/\/.*
 
 {ENTIER} {
                 /* A completer : affecter yylval.intval et faire des verifications */
-                /*
                 if (yytext[1] == 'x')
-                    yylval.intval = strtol(yytext+2, NULL, 16);
+                    yylval.intval = strtol(yytext, NULL, 16);
                 else
                     yylval.intval = atoi(yytext);
-                    */
                 return TOK_INTVAL;
 }
 
@@ -135,7 +133,6 @@ int main(int argc, char ** argv) {
     fclose(yyin);
     check_program_tree(program_root);
     analyse_tree(program_root);
-    dump_tree(program_root, "tree");
     if (check_program_tree(program_root))
         printf("C'EST OK\n");
     yylex_destroy();
