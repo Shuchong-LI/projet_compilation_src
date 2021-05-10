@@ -195,7 +195,7 @@ inst:
         }
         | TOK_IF TOK_LPAR expr TOK_RPAR inst %prec TOK_THEN
         {
-            $$ = make_node(NODE_IF, 2, $3, 5);
+            $$ = make_node(NODE_IF, 2, $3, $5);
         }
         | TOK_WHILE TOK_LPAR expr TOK_RPAR inst
         {
