@@ -122,12 +122,18 @@ int yywrap(void) {
 
 
 int main(int argc, char ** argv) {
+
+    if (argc < 2) {
+        printf("Usage : minicc file.c pour compiler le fichier file.c\n");
+        return 0;
+    }
+    
     node_t program_root;
     parse_args(argc, argv);
     #if YYDEBUG
     yydebug = 1;
     #endif
-    
+
     yyin = fopen(infile, "r");
     yyparse(&program_root);
     fclose(yyin);
