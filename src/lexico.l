@@ -16,6 +16,7 @@ char * infile = NULL;
 char * outfile = DEFAULT_OUTFILE;
 bool stop_after_syntax = false;
 bool stop_after_verif = false;
+int nbr_registre_max = 8;
 
 #if YYDEBUG
 extern int yydebug;
@@ -127,7 +128,7 @@ int main(int argc, char ** argv) {
     #if YYDEBUG
     yydebug = 1;
     #endif
-    
+
     yyin = fopen(infile, "r");
     yyparse(&program_root);
     fclose(yyin);
