@@ -29,7 +29,7 @@ void * get_data(context_t context, char * idf);
 void push_global_context();
 void push_context();
 void pop_context();
-void * get_decl_node(char * ident);
+node_t get_decl_node(char * ident);
 int32_t env_add_element(char * ident, void * node);
 void reset_env_current_offset();
 int32_t get_env_current_offset();
