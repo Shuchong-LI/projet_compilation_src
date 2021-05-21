@@ -19,14 +19,97 @@ extern char * outfile;
 int32_t trace_level = DEFAULT_TRACE_LEVEL;
 extern bool stop_after_syntax;
 extern bool stop_after_verif;
+extern int nbr_registre_max;
 
 
 void parse_args(int argc, char ** argv) {
     // A implementer (la ligne suivante est a changer)
-    infile = argv[1];
+    //infile = argv[1];
+    char c;
+    char * end;
+    while ((c = getopt (argc, argv, "bo:t:r:svh")) != -1) {
+        switch (c) {
+            case 'b':
+                if (argc > 2){
+                    fprintf(stderr, "error: L'option -b ne peut etre utilisée que sans autre option et sans fichier source.\n");
+                    exit(1);
+                }
+                printf("===================================================\n");
+                printf("minicc - Clement LEBOULENGER et Julie RAGO\n");
+                printf("===================================================\n");
+                exit(0);
+            case 'o':
+                outfile = optarg;
+                break;
+            case 't':
+                trace_level = strtol(optarg, &end, 10);
+                if (end == optarg){
+                    fprintf(stderr, "error: Unknown option value for -t.\n");
+                    exit(1);
+                }
+                if ((trace_level < 0) || (trace_level > 5)){
+                    fprintf(stderr, "error: Option -t requiert un nombre entre 0 et 5\n");
+                    exit(1);
+                }
+                break;
+            case 'r':
+                nbr_registre_max = strtol(optarg, &end, 10);
+                if (end == optarg){
+                    fprintf(stderr, "error: Unknown option value for -r.\n");
+                    exit(1);
+                }
+                if ((nbr_registre_max < 4) || (nbr_registre_max > 8)){
+                    fprintf(stderr, "error: Option -r requiert un nombre entre 4 et 8\n");
+                    exit(1);
+                }
+                break;
+            case 's':
+                stop_after_syntax = true;
+                if (stop_after_verif){
+                    fprintf(stderr, "error: Options -s et -v incompatibles\n");
+                    exit(1);
+                }
+                break;
+            case 'v':
+                stop_after_verif = true;
+                if (stop_after_syntax){
+                    fprintf(stderr, "error: Options -s et -v incompatibles\n");
+                    exit(1);
+                }
+                break;
+            case 'h':
+                printf("Options disponibles :\n");
+                printf("-b : banniere\n");
+                printf("-o <filename> : nom du fichier assembleur produit\n");
+                printf("-t <int> : niveau de trace (entre 0 et 5)\n");
+                printf("-r <int> : nombre maximum de registres (entre 4 et 8)\n");
+                printf("-s : arreter la compilation apres l'analyse syntaxique\n");
+                printf("-v : arreter la compilation apres la passe de verifications\n");
+                exit(0);
+            case '?':
+                if (optopt == 't'){
+                    fprintf(stderr, "error : Option -%c requires an argument.\n", optopt);
+                }
+                else if (isprint (optopt)){
+                    fprintf(stderr, "error: Unknown option -%c\n", optopt);
+                }
+                exit(1);
+            default:
+                abort();
+
+        }
+    }
+
+    infile = argv[optind];
+    if (optind < (argc - 1)){
+        fprintf(stderr, "error: un seul fichier source necessaire.\n");
+        exit(1);
+    }
+    if (optind == argc){
+        fprintf(stderr, "error: fichier source necessaire.\n");
+        exit(1);
+    }
 }
-
-
 
 void free_nodes(node_t n) {
     // A implementer
@@ -158,7 +241,7 @@ void dump_tree(node_t prog_root, const char * dotname) {
     f = fopen(dotname, "w");
     fprintf(f, "digraph global_vars {\n");
     dump_tree2dot(f, prog_root);
-    fprintf(f, "}");    
+    fprintf(f, "}");
     fclose(f);
 }
 
@@ -324,7 +407,3 @@ const char * node_nature2symb(node_nature t) {
             exit(1);
     }
 }
-
-
-
-
