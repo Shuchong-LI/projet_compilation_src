@@ -100,7 +100,7 @@ listdecl:
         }
         ;
 
-listdeclnonnull: 
+listdeclnonnull:
         vardecl
         {
             $$ = $1;
@@ -316,7 +316,7 @@ expr:
             $$ = make_node(NODE_NOT, 1, $2);
         }
         | TOK_BNOT expr
-        {   
+        {
             $$ = make_node(NODE_BNOT, 1, $2);
         }
         | TOK_LPAR expr TOK_RPAR
@@ -396,32 +396,23 @@ node_t make_node(node_nature nature, int nops, ...) {
     node->decl_node = NULL;
     node->ident = NULL;
     node->str = NULL;
+    int nbfils;
 
     // On détermine le nombre d'arguments a lire
     switch (nature) {
-    case NODE_IDENT:
-        va_start(ap, nops + 1);
-        break;
-    case NODE_TYPE:
-        va_start(ap, nops + 1);
-        break;
-    case NODE_INTVAL:
-        va_start(ap, nops + 1);
-        break;
-    case NODE_BOOLVAL:
-        va_start(ap, nops + 1);
-        break;
-    case NODE_STRINGVAL:
-        va_start(ap, nops + 1);
+    case NODE_IDENT: NODE_TYPE: NODE_INTVAL: NODE_BOOLVAL: NODE_STRINGVAL:
+        nbfils = 0;
         break;
     default:
-        va_start(ap, nops);
+        nbfils = nops;
     }
 
+    va_start(ap, nops);
+
     // Creation de la liste des fils
-    node->nops = nops;
-    node->opr = (node_t*)malloc(nops * sizeof(node_t));
-    for (int i = 0; i < nops; i++) {
+    node->nops = nbfils;
+    node->opr = (node_t*)malloc(nbfils * sizeof(node_t));
+    for (int i = 0; i < nbfils; i++) {
         node->opr[i] = va_arg(ap, node_t);
     }
 

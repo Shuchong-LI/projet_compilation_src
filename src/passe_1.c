@@ -16,6 +16,55 @@ int is_fun_decl = 0;
 int is_global = 0;
 int taille_pile = 0;
 
+/*
+faire une fonction d'erreur avec le numero de la ligne  de ce type2
+
+faire les tests en conséquence
+
+void yyerror(node_t * program_root, char * s) {
+    fprintf(stderr, "Error line %d: %s\n", yylineno, s);
+    exit(1);
+}
+
+*/
+// à améliorer
+void printerror(){
+	fprintf(stderr, "erreur type_op");
+    exit(1);
+}
+
+node_type type_op_unaire(node_nature operateur, node_type type) {
+	switch (operateur) {
+		case NODE_MINUS: NODE_BNOT:
+		if (type != TYPE_INT){
+			printerror();
+		}
+		return type;
+		case NODE_NOT:
+		if (type != TYPE_BOOL){
+			printerror();
+		}
+		return type;
+		default:
+		fprintf(stderr, "operateur incompatible avec operation unaire");
+	    exit(1);
+
+	}
+	// if (operateur == NODE_MINUS){
+	// 	if (type != TYPE_INT){
+	//
+	// 	}
+	// }
+}
+
+node_type type_op_binaire(node_nature operateur, node_type type1, node_type type2) {
+	switch (operateur) {
+		case NODE_PLUS: NODE_MINUS: NODE_MUL: NODE_DIV: NODE_MOD: NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE_SRL: NODE_SRA:
+
+	}
+	return type;
+}
+
 void analyse_passe_1(node_t root) {
 	int32_t tmp_offset;
 	if (root == NULL)
@@ -152,4 +201,3 @@ free_program_after_error: //TODO: A modifie
 	free_nodes();
 	exit(1);
 }
-
