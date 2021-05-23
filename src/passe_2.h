@@ -38,6 +38,10 @@
 #define $fp 30
 #define $ra 31
 
+#define PRINT_INTEGER_SYSCALL 1
+#define PRINT_STRING_SYSCALL 4
+#define EXIT_SYSCALL 10
+
 void gen_code_passe_2(node_t root);
 
 #endif
