@@ -21,7 +21,7 @@ void gen_code_passe_2(node_t root) {
 		gen_code_passe_2(root->opr[1]);
 
 		create_inst_comment("exit");
-		create_inst_ori(2, 0, 10); // $2 <- 10
+		create_inst_ori($v0, $zero, 10); // $v0 <- 10
 		create_inst_syscall();
 		break;
 	
@@ -55,14 +55,14 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PRINT: // TODO
-		create_inst_ori(2, 0, 4); // $v0 <- 4
+		create_inst_ori($v0, $zero, 4); // $v0 <- 4
 		gen_code_passe_2(root->opr[0]);
 		create_inst_syscall();
 		break;
 
 	case NODE_STRINGVAL:
-		create_inst_lui(4, 0x1001);
-		create_inst_addiu(4, 4, root->offset);
+		create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);
+		create_inst_addiu($a0, $a0, root->offset);
 		break;
 	default:
 		break;
