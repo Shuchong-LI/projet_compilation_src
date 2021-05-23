@@ -9,6 +9,7 @@
 extern int trace_level;
 
 node_type current_node_type = TYPE_NONE;
+node_t lval = NULL;
 int is_lval_in_decl = 0;
 int is_rval_in_decl = 0;
 int is_fun_decl = 0;
@@ -32,12 +33,12 @@ void analyse_passe_1(node_t root) {
 
 	case NODE_FUNC:
 		is_fun_decl = 1;
+		reset_env_current_offset();
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
-		taille_pile = get_env_current_offset();
 		is_fun_decl = 0;
 		analyse_passe_1(root->opr[2]);
-		taille_pile = get_env_current_offset() - taille_pile;
+		taille_pile = get_env_current_offset();
 		root->offset = taille_pile;
 		break;
 
@@ -48,6 +49,7 @@ void analyse_passe_1(node_t root) {
 	case NODE_IDENT:
 		// lval in declaration
 		if (is_lval_in_decl) {
+			lval = root;
 			tmp_offset = env_add_element(root->ident, root);
 			if (tmp_offset < 0) {
 				fprintf(stderr, "Erreur : variable %s deja declare\n", root->ident);
@@ -107,28 +109,31 @@ void analyse_passe_1(node_t root) {
 		break;
 
 	case NODE_STRINGVAL:
-		if (is_rval_in_decl)
-			if (current_node_type != TYPE_STRING) {
-				printf("Erreur : is incompatible with string\n");
-				goto free_program_after_error;
-			}
-		//root->offset = (root->str);
+		if (is_rval_in_decl) {
+			printf("Erreur : string litteral cannot be assigned to variable\n");
+			goto free_program_after_error;
+		}
+		root->offset = add_string(root->str);
 		break;
 
 	case NODE_INTVAL:
-		if (is_rval_in_decl)
-			if (current_node_type != TYPE_INT) {
-				printf("Erreur : is incompatible with int\n");
+		if (is_rval_in_decl) {
+			if (lval->type != TYPE_INT) {
+				printf("Erreur : %s is not int\n", lval->ident);
 				goto free_program_after_error;
 			}
+			lval->value = root->value;
+		}
 		break;
 	
 	case NODE_BOOLVAL:
-		if (is_rval_in_decl)
+		if (is_rval_in_decl) {
 			if (current_node_type != TYPE_BOOL) {
-				printf("Erreur : is incompatible with bool\n");
+				printf("Erreur : %s is not bool\n", lval->ident);
 				goto free_program_after_error;
 			}
+			lval->value = root->value;
+		}
 		break;
 
 	case NODE_PRINT:
