@@ -386,7 +386,16 @@ node_t make_node(node_nature nature, int nops, ...) {
     if (node == NULL)
         return NULL;
     node->nature = nature;
+    node->type = TYPE_NONE;
+    //node->value = 0;
+    node->offset = 0;
+    node->global_decl = 0;
     node->lineno = yylineno;
+    node->nops = 0;
+    node->opr = NULL;
+    node->decl_node = NULL;
+    node->ident = NULL;
+    node->str = NULL;
     int nbfils;
 
     // On détermine le nombre d'arguments a lire
@@ -418,13 +427,16 @@ node_t make_node(node_nature nature, int nops, ...) {
         break;
     case NODE_INTVAL:
         node->value = va_arg(ap, int);
+        node->type = TYPE_INT;
         break;
     case NODE_BOOLVAL:
         node->value = va_arg(ap, int);
+        node->type = TYPE_BOOL;
         break;
     case NODE_STRINGVAL:
         tmp = va_arg(ap, char *);
         node->str = strdup(tmp);
+        node->type = TYPE_STRING;
         break;
     }
 

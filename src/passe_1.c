@@ -8,8 +8,10 @@
 
 extern int trace_level;
 
-node_type current_node_type = TYPE_VOID;
+node_type current_node_type = TYPE_NONE;
+node_t lval = NULL;
 int is_lval_in_decl = 0;
+int is_rval_in_decl = 0;
 int is_fun_decl = 0;
 int is_global = 0;
 int taille_pile = 0;
@@ -65,7 +67,6 @@ node_type type_op_binaire(node_nature operateur, node_type type1, node_type type
 
 void analyse_passe_1(node_t root) {
 	int32_t tmp_offset;
-	node_t tmp_node;
 	if (root == NULL)
 		return;
 
@@ -81,12 +82,12 @@ void analyse_passe_1(node_t root) {
 
 	case NODE_FUNC:
 		is_fun_decl = 1;
+		reset_env_current_offset();
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
-		taille_pile = get_env_current_offset();
 		is_fun_decl = 0;
 		analyse_passe_1(root->opr[2]);
-		taille_pile = get_env_current_offset() - taille_pile;
+		taille_pile = get_env_current_offset();
 		root->offset = taille_pile;
 		break;
 
@@ -97,39 +98,32 @@ void analyse_passe_1(node_t root) {
 	case NODE_IDENT:
 		// lval in declaration
 		if (is_lval_in_decl) {
+			lval = root;
 			tmp_offset = env_add_element(root->ident, root);
 			if (tmp_offset < 0) {
 				fprintf(stderr, "Erreur : variable %s deja declare\n", root->ident);
-				goto free_programm_after_error;
+				goto free_program_after_error;
 			}
 			root->offset = tmp_offset;
 			root->type = current_node_type;
 			if (root->type == TYPE_VOID) {
 				fprintf(stderr, "Error : void is not an allowed variable type\n");
-				goto free_programm_after_error;
+				goto free_program_after_error;
 			}
 			root->global_decl = is_global;
 		} else if (is_fun_decl) {
 			if (strcmp(root->ident, "main") == 0 && current_node_type != TYPE_VOID) {
 				fprintf(stderr, "Erreur : main should be void type\n");
-				goto free_programm_after_error;
+				goto free_program_after_error;
 			}
-			tmp_offset = env_add_element(root->ident, root);
-			if (tmp_offset < 0) {
-				fprintf(stderr, "Erreur : main deja declare\n");
-				goto free_programm_after_error;
-			}
-			root->offset = tmp_offset;
 			root->type = current_node_type;
 			root->global_decl = is_global;
 		} else {
-			printf("sizeof node_t: %d\n", sizeof(node_t));
-			printf("0x%llx\n", get_decl_node(root->ident));
 			node_t tmp_node = (node_t) get_decl_node(root->ident);
 			// Si la variable n'a pas ete declare
 			if (tmp_node == NULL) {
 				fprintf(stderr, "Erreur : variable %s non declare\n", root->ident);
-				goto free_programm_after_error;
+				goto free_program_after_error;
 			}
 			root->decl_node = tmp_node;
 			root->type = root->decl_node->type;
@@ -153,7 +147,9 @@ void analyse_passe_1(node_t root) {
 		is_lval_in_decl = 1;
 		analyse_passe_1(root->opr[0]);
 		is_lval_in_decl = 0;
+		is_rval_in_decl = 1;
 		analyse_passe_1(root->opr[1]);
+		is_rval_in_decl = 0;
 		break;
 
 	case NODE_LIST:
@@ -162,18 +158,45 @@ void analyse_passe_1(node_t root) {
 		break;
 
 	case NODE_STRINGVAL:
-		//root->offset = (root->str);
+		if (is_rval_in_decl) {
+			printf("Erreur : string litteral cannot be assigned to variable\n");
+			goto free_program_after_error;
+		}
+		root->offset = add_string(root->str);
+		break;
+
+	case NODE_INTVAL:
+		if (is_rval_in_decl) {
+			if (lval->type != TYPE_INT) {
+				printf("Erreur : %s is not int\n", lval->ident);
+				goto free_program_after_error;
+			}
+			lval->value = root->value;
+		}
+		break;
+	
+	case NODE_BOOLVAL:
+		if (is_rval_in_decl) {
+			if (current_node_type != TYPE_BOOL) {
+				printf("Erreur : %s is not bool\n", lval->ident);
+				goto free_program_after_error;
+			}
+			lval->value = root->value;
+		}
 		break;
 
 	case NODE_PRINT:
 		analyse_passe_1(root->opr[0]);
 		break;
-	default:
+
+	case NODE_IF:
+
 		break;
+	default:
 	}
 	return;
 
-free_programm_after_error: //TODO: A modifie
+free_program_after_error: //TODO: A modifie
 	free_global_strings();
 	free_nodes();
 	exit(1);
