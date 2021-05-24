@@ -420,7 +420,7 @@ node_t make_node(node_nature nature, int nops, ...) {
     switch (nature) {
     case NODE_IDENT:
         tmp = va_arg(ap, char *);
-        node->ident = strdup(tmp);
+        node->ident = tmp;
         break;
     case NODE_TYPE:
         node->type = va_arg(ap, node_type);
@@ -435,7 +435,7 @@ node_t make_node(node_nature nature, int nops, ...) {
         break;
     case NODE_STRINGVAL:
         tmp = va_arg(ap, char *);
-        node->str = strdup(tmp);
+        node->str = tmp;
         node->type = TYPE_STRING;
         break;
     }

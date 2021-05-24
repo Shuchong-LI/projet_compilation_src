@@ -112,7 +112,17 @@ void parse_args(int argc, char ** argv) {
 }
 
 void free_nodes(node_t n) {
-    // A implementer
+    if (n == NULL)
+        return;
+    for (int i = 0; i < n->nops; i++)
+        free_nodes(n->opr[i]);
+    if (n->opr != NULL)
+        free(n->opr);
+    if (n->str != NULL)
+        free(n->str);
+    if (n->ident != NULL)
+        free(n->ident);
+    free(n);
 }
 
 

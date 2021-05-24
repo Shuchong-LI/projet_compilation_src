@@ -140,8 +140,10 @@ int main(int argc, char ** argv) {
     fclose(yyin);
     check_program_tree(program_root);
     analyse_tree(program_root);
+    /*
     if (check_program_tree(program_root))
         printf("C'EST OK\n");
+    */
     yylex_destroy();
     return 0;
 }
