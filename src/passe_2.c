@@ -14,7 +14,6 @@ void gen_code_passe_2(node_t root) {
 	switch (root->nature) {
 	case NODE_PROGRAM:
 		create_inst_data_sec();
-		create_inst_label_str("data_section_start");
 		gen_code_passe_2(root->opr[0]);
 		// Allocation des chaines des caracteres
 		for (int i = 0; i < get_global_strings_number(); i++)
@@ -81,17 +80,18 @@ void print_handler(node_t root)
 		print_handler(root->opr[1]);
 	} else if (root->nature == NODE_STRINGVAL) {
 		create_inst_comment("print");
-		create_inst_ori($v0, $zero, PRINT_STRING_SYSCALL); // $v0 <- 4
-		create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);
-		create_inst_addiu($a0, $a0, root->offset);
+		create_inst_ori($v0, $zero, PRINT_STRING_SYSCALL);		// $v0 <- 4
+		create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);		// fetch global address
+		create_inst_addiu($a0, $a0, root->offset);			// add the offset
 		create_inst_syscall();
 	} else {
 		create_inst_comment("print");
-		create_inst_ori($v0, $zero, PRINT_INTEGER_SYSCALL); // $v0 <- 1
-		if (root->global_decl) // TODO : quand variable n'est pas globale
-			create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);
-		create_inst_addiu($a0, $a0, root->offset);
-		create_inst_lw($a0, 0, $sp);
+		create_inst_ori($v0, $zero, PRINT_INTEGER_SYSCALL);		// $v0 <- 1
+		if (root->global_decl)
+			create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);	// fetch global address
+		else
+			create_inst_or($a0, $zero, $sp);			// fetch stack address
+		create_inst_lw($a0, root->offset, $a0);				// add the offset
 		create_inst_syscall();
 	}
 }

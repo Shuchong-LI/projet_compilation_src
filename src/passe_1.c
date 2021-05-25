@@ -62,7 +62,7 @@ node_type type_op_binaire(node_nature operateur, node_type type1, node_type type
 		case NODE_PLUS: NODE_MINUS: NODE_MUL: NODE_DIV: NODE_MOD: NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE_SRL: NODE_SRA:
 
 	}
-	return type;
+	//return type;
 }
 
 void analyse_passe_1(node_t root) {
@@ -83,6 +83,7 @@ void analyse_passe_1(node_t root) {
 	case NODE_FUNC:
 		is_fun_decl = 1;
 		reset_env_current_offset();
+		reset_temporary_max_offset();
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
 		is_fun_decl = 0;
@@ -126,8 +127,9 @@ void analyse_passe_1(node_t root) {
 				goto free_program_after_error;
 			}
 			root->decl_node = tmp_node;
-			root->type = root->decl_node->type;
-			root->offset = root->decl_node->offset;
+			root->type = tmp_node->type;
+			root->offset = tmp_node->offset;
+			root->global_decl = tmp_node->global_decl;
 		}
 		break;
 
