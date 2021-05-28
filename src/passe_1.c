@@ -232,9 +232,27 @@ void analyse_passe_1(node_t root) {
 		analyse_passe_1(root->opr[3]);
 		break;
 
-	case NODE_AFFECT: case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD: 
+	case NODE_WHILE: //case NODE_DOWHILE:
+		analyse_passe_1(root->opr[0]);
+		if ((root->opr[0]->type) != TYPE_BOOL) {
+			fprintf(stderr, "Erreur ligne %d : while condition does not have a boolean type.\n", root->opr[0]->lineno);
+			goto free_program_after_error;
+		}
+		analyse_passe_1(root->opr[1]);
+		break;
+
+	case NODE_DOWHILE:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
+		if ((root->opr[1]->type) != TYPE_BOOL) {
+			fprintf(stderr, "Erreur ligne %d : 'while' condition in do-while statement does not have a boolean type.\n", root->opr[1]->lineno);
+			goto free_program_after_error;
+		}
+		break;
+
+	case NODE_AFFECT: case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
 	case NODE_BAND: case NODE_BOR: case NODE_BXOR: case NODE_SLL: case NODE_SRL: case NODE_SRA:
-	case NODE_EQ: case NODE_NE: case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: 
+	case NODE_EQ: case NODE_NE: case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE:
 	case NODE_AND: case NODE_OR:
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);

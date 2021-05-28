@@ -14,7 +14,7 @@ void reg_desallocation(int32_t tmp_reg, int is_reg_available);
 void gen_code_passe_2(node_t root) {
 	if (root == NULL)
 		return;
-	
+
 	switch (root->nature) {
 	case NODE_PROGRAM:
 		create_inst_data_sec();
@@ -30,12 +30,12 @@ void gen_code_passe_2(node_t root) {
 		create_inst_ori($v0, $zero, EXIT_SYSCALL); // $v0 <- 10
 		create_inst_syscall();
 		break;
-	
+
 	case NODE_LIST:
 		gen_code_passe_2(root->opr[0]);
 		gen_code_passe_2(root->opr[1]);
 		break;
-		
+
 	case NODE_DECLS:
 		gen_code_passe_2(root->opr[1]);
 		break;
@@ -61,7 +61,7 @@ void gen_code_passe_2(node_t root) {
 		int32_t stack_size = get_temporary_max_offset() + root->offset;
 		create_inst_stack_deallocation(stack_size);
 		break;
-	
+
 	case NODE_BLOCK: //TODO
 		// Remplissage pile
 		block_allocation(root->opr[0]);
@@ -76,9 +76,8 @@ void gen_code_passe_2(node_t root) {
 		gen_code_passe_2(root->opr[0]);		// Handle the first instruction
 		break;
 
-	case NODE_AFFECT:
+	case NODE_AFFECT: ;
 		int32_t result_reg = affect_handler(root->opr[1]);
-
 		int32_t address_reg;
 		int is_reg_available;
 		address_reg = reg_allocation(&is_reg_available);
@@ -86,7 +85,7 @@ void gen_code_passe_2(node_t root) {
 			create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
 		else
 			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
-		
+
 		create_inst_sw(address_reg, root->opr[0]->offset, result_reg);	// Store right value of affect
 										// in memory
 
@@ -94,7 +93,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PLUS:
-
+		break;
 
 	default:
 		break;
@@ -146,7 +145,7 @@ void block_allocation(node_t root)
 	case NODE_DECLS:
 		block_allocation(root->opr[1]);
 		break;
-	case NODE_DECL:
+	case NODE_DECL: ;
 		int32_t tmp_reg;
 		int is_reg_available;
 		tmp_reg = reg_allocation(&is_reg_available);
