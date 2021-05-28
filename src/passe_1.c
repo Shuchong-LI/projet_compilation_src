@@ -28,41 +28,65 @@ void yyerror(node_t * program_root, char * s) {
 
 */
 // à améliorer
-void printerror(){
-	fprintf(stderr, "erreur type_op");
-    exit(1);
+void printerror(node_t node){
+	fprintf(stderr, "Error line %d: operateur incompatible avec operation\n", node->lineno);
+	exit(1);
 }
 
-node_type type_op_unaire(node_nature operateur, node_type type) {
+node_type type_op_unaire(node_nature operateur, node_t noeud) {
 	switch (operateur) {
-		case NODE_MINUS: NODE_BNOT:
-		if (type != TYPE_INT){
-			printerror();
+	case NODE_MINUS: NODE_BNOT:
+		if (noeud->type != TYPE_INT){
+			printerror(noeud);
 		}
-		return type;
-		case NODE_NOT:
-		if (type != TYPE_BOOL){
-			printerror();
+		return TYPE_INT;
+	case NODE_NOT:
+		if (noeud->type != TYPE_BOOL){
+			printerror(noeud);
 		}
-		return type;
-		default:
-		fprintf(stderr, "operateur incompatible avec operation unaire");
-	    exit(1);
-
+		return TYPE_BOOL;
+	default:
+		printerror(noeud);
 	}
-	// if (operateur == NODE_MINUS){
-	// 	if (type != TYPE_INT){
-	//
-	// 	}
-	// }
 }
 
-node_type type_op_binaire(node_nature operateur, node_type type1, node_type type2) {
+node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 	switch (operateur) {
 		case NODE_PLUS: NODE_MINUS: NODE_MUL: NODE_DIV: NODE_MOD: NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE_SRL: NODE_SRA:
-
+			if (n1->type != TYPE_INT){
+				printerror(n1);
+			}
+			if (n2->type != TYPE_INT){
+				printerror(n2);
+			}
+			return TYPE_INT;
+		case NODE_EQ: NODE_LT: NODE_GT: NODE_LE: NODE_GE:
+			if (n1->type != TYPE_INT){
+				printerror(n1);
+			}
+			if (n2->type != TYPE_INT){
+				printerror(n2);
+			}
+			return TYPE_BOOL;
+		case NODE_AND: NODE_OR: NODE_EQ:
+			if (n1->type != TYPE_BOOL){
+				printerror(n1);
+			}
+			if (n2->type != TYPE_BOOL){
+				printerror(n2);
+			}
+			return TYPE_BOOL;
+		case NODE_NE: // deux possibilités pour ce node : bool-bool et int-int
+			if ((n1->type == TYPE_INT) && (n2->type == TYPE_INT)){
+				return TYPE_BOOL;
+			}
+			if ((n1->type == TYPE_BOOL) && (n2->type == TYPE_BOOL)){
+				return TYPE_BOOL;
+			}
+			printerror(n1);
+		default:
+			printerror(n1);
 	}
-	//return type;
 }
 
 void analyse_passe_1(node_t root) {
@@ -176,7 +200,7 @@ void analyse_passe_1(node_t root) {
 			lval->value = root->value;
 		}
 		break;
-	
+
 	case NODE_BOOLVAL:
 		if (is_rval_in_decl) {
 			if (current_node_type != TYPE_BOOL) {
@@ -194,7 +218,13 @@ void analyse_passe_1(node_t root) {
 	case NODE_IF:
 
 		break;
+
+	case NODE_MINUS: NODE_BNOT: NODE_NOT:
+			type_op_unaire(root->nature, root);
+			break;
+
 	default:
+		break;
 	}
 	return;
 
