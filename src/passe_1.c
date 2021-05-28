@@ -218,6 +218,10 @@ void analyse_passe_1(node_t root) {
 
 	case NODE_IF:
 		analyse_passe_1(root->opr[0]);
+		if (root->nature != TYPE_BOOL) {
+			fprintf(stderr, "Erreur\n"); // TODO
+			goto free_program_after_error;
+		}
 		analyse_passe_1(root->opr[1]);
 		break;
 
