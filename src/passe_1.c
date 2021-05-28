@@ -42,7 +42,9 @@ node_type type_op_unaire(node_nature operateur, node_t noeud) {
 
 node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 	switch (operateur) {
-		case NODE_PLUS: NODE_MINUS: NODE_MUL: NODE_DIV: NODE_MOD: NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE_SRL: NODE_SRA:
+		case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
+		case NODE_BAND: case NODE_BOR: case NODE_BXOR:
+		case NODE_SLL: case NODE_SRL: case NODE_SRA:
 			if (n1->type != TYPE_INT){
 				printerror(n1);
 			}
@@ -50,7 +52,7 @@ node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 				printerror(n2);
 			}
 			return TYPE_INT;
-		case NODE_EQ: NODE_LT: NODE_GT: NODE_LE: NODE_GE:
+		case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE:
 			if (n1->type != TYPE_INT){
 				printerror(n1);
 			}
@@ -58,7 +60,7 @@ node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 				printerror(n2);
 			}
 			return TYPE_BOOL;
-		case NODE_AND: NODE_OR: NODE_EQ:
+		case NODE_AND: case NODE_OR:
 			if (n1->type != TYPE_BOOL){
 				printerror(n1);
 			}
@@ -66,13 +68,18 @@ node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 				printerror(n2);
 			}
 			return TYPE_BOOL;
-		case NODE_NE: // deux possibilités pour ce node : bool-bool et int-int
+		case NODE_NE: case NODE_EQ: // deux possibilités pour ce node : bool-bool et int-int
 			if ((n1->type == TYPE_INT) && (n2->type == TYPE_INT)){
 				return TYPE_BOOL;
 			} else if ((n1->type == TYPE_BOOL) && (n2->type == TYPE_BOOL)){
 				return TYPE_BOOL;
 			}
 			printerror(n1);
+		case NODE_AFFECT:
+			if (n1->type != TYPE_VOID && n1->type == n2->type)
+				return n1->type;
+			else
+				printerror(n1);
 		default:
 			printerror(n1);
 	}
@@ -221,25 +228,16 @@ void analyse_passe_1(node_t root) {
 		analyse_passe_1(root->opr[3]);
 		break;
 
-	case NODE_AFFECT:
-		analyse_passe_1(root->opr[0]);
-		analyse_passe_1(root->opr[1]);
-		break;
-
-	case NODE_LT:
-		analyse_passe_1(root->opr[0]);
-		analyse_passe_1(root->opr[1]);
-		break;
-
-	case NODE_PLUS: NODE_MINUS : NODE_MUL : NODE_DIV: NODE_MOD: 
-	NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE:SRL: NODE_SRA:
-	NODE_EQ: NODE_NE: NODE_LT: NODE_GT: NODE_LE: NODE_GE: NODE_AND: NODE_OR:
+	case NODE_AFFECT: case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD: 
+	case NODE_BAND: case NODE_BOR: case NODE_BXOR: case NODE_SLL: case NODE_SRL: case NODE_SRA:
+	case NODE_EQ: case NODE_NE: case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: 
+	case NODE_AND: case NODE_OR:
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
 		root->type = type_op_binaire(root->nature, root->opr[0], root->opr[1]);
 		break;
 
-	case NODE_UMINUS: NODE_BNOT: NODE_NOT:
+	case NODE_UMINUS: case NODE_BNOT: case NODE_NOT:
 		type_op_unaire(root->opr[0]->nature, root);
 		root->type = type_op_unaire(root->nature, root);
 		break;
