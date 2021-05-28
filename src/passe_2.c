@@ -6,6 +6,8 @@
 
 void print_handler(node_t root);
 void block_allocation(node_t root);
+int32_t reg_allocation(int *is_reg_available);
+void reg_desallocation(int32_t tmp_reg, int is_reg_available);
 
 void gen_code_passe_2(node_t root) {
 	if (root == NULL)
@@ -68,6 +70,15 @@ void gen_code_passe_2(node_t root) {
 		print_handler(root->opr[0]);
 		break;
 
+	case NODE_FOR:
+		gen_code_passe_2(root->opr[0]);		// Handle the first instruction
+		break;
+
+	case NODE_AFFECT:
+		if (!reg_available) {
+
+		}
+
 	default:
 		break;
 	}
@@ -110,15 +121,38 @@ void block_allocation(node_t root)
 		block_allocation(root->opr[1]);
 		break;
 	case NODE_DECL:
-		if (!reg_available) {
-			fprintf(stderr, "Error : not enough register\n");
-		}
-		allocate_reg();
-		int32_t tmp_reg = get_current_reg();
+		int32_t tmp_reg;
+		int is_reg_available;
+		tmp_reg = reg_allocation(&is_reg_available);
+
 		create_inst_ori(tmp_reg, $zero, root->opr[0]->value);
 		create_inst_sw(tmp_reg, root->opr[0]->offset, $sp);
-		release_reg();
+
+		reg_desallocation(tmp_reg, is_reg_available);
 		// TODO : operation
 		break;
 	}
+}
+
+int32_t reg_allocation(int *is_reg_available)
+{
+	int32_t tmp_reg;
+	*is_reg_available = reg_available();
+	if (!(*is_reg_available)) {
+		tmp_reg = get_restore_reg();
+		push_temporary(tmp_reg);
+		//fprintf(stderr, "Error : not enough register\n");
+	} else {
+		allocate_reg();
+		tmp_reg = get_current_reg();
+	}
+	return tmp_reg;
+}
+
+void reg_desallocation(int32_t tmp_reg, int is_reg_available)
+{
+	if (!is_reg_available)
+		pop_temporary(tmp_reg);
+	else
+		release_reg();
 }
