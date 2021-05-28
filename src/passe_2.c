@@ -6,10 +6,8 @@
 
 void print_handler(node_t root);
 void block_allocation(node_t root);
-/* Return the registrer of the result of the right hand expression */
-int32_t affect_handler(node_t root);
-int32_t reg_allocation(int *is_reg_available);
-void reg_desallocation(int32_t tmp_reg, int is_reg_available);
+void right_affect_handler(node_t root, int32_t address_reg);
+void expression_handler(node_t root, int32_t result_reg);
 
 void gen_code_passe_2(node_t root) {
 	if (root == NULL)
@@ -77,20 +75,33 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_AFFECT:
-		int32_t result_reg = affect_handler(root->opr[1]);
-
 		int32_t address_reg;
-		int is_reg_available;
-		address_reg = reg_allocation(&is_reg_available);
+		int is_reg_available = reg_available();
+		// Allocate register for address
+		if (is_reg_available) {
+			allocate_reg();
+			address_reg = get_current_reg();
+		} else {
+			address_reg = get_restore_reg();
+			push_temporary(address_reg);
+		}
+
+		// Get address of lvalue
 		if (root->opr[0]->global_decl)
 			create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
 		else
 			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
+		create_inst_addiu(address_reg, address_reg, root->offset);		// Add the offset
 		
-		create_inst_sw(address_reg, root->opr[0]->offset, result_reg);	// Store right value of affect
+		right_affect_handler(root->opr[1], address_reg);
+		//create_inst_sw(address_reg, root->opr[0]->offset, result_reg);	// Store right value of affect
 										// in memory
 
-		reg_desallocation(address_reg, is_reg_available);
+		if (is_reg_available)
+			release_reg();
+		else
+			pop_temporary(address_reg);
+		//reg_desallocation(address_reg, is_reg_available);
 		break;
 
 	case NODE_PLUS:
@@ -149,36 +160,111 @@ void block_allocation(node_t root)
 	case NODE_DECL:
 		int32_t tmp_reg;
 		int is_reg_available;
-		tmp_reg = reg_allocation(&is_reg_available);
+		// Allocate registre
+		if (is_reg_available) {
+			allocate_reg();
+			tmp_reg = get_current_reg();
+		} else {
+			tmp_reg = get_restore_reg();
+			push_temporary(tmp_reg);
+		}
 
 		create_inst_ori(tmp_reg, $zero, root->opr[0]->value);
 		create_inst_sw(tmp_reg, root->opr[0]->offset, $sp);
 
-		reg_desallocation(tmp_reg, is_reg_available);
+		// Release registre
+		if (is_reg_available)
+			release_reg();
+		else
+			pop_temporary(tmp_reg);
 		// TODO : operation
 		break;
 	}
 }
 
-int32_t reg_allocation(int *is_reg_available) // TODO : a changer
+void right_affect_handler(node_t root, int32_t address_reg)
 {
 	int32_t tmp_reg;
-	*is_reg_available = reg_available();
-	if (!(*is_reg_available)) {
-		tmp_reg = get_restore_reg();
-		push_temporary(tmp_reg);
-		//fprintf(stderr, "Error : not enough register\n");
-	} else {
+	int is_reg_available = reg_available();
+	// Allocate registre
+	if (is_reg_available) {
 		allocate_reg();
 		tmp_reg = get_current_reg();
+	} else {
+		tmp_reg = get_restore_reg();
+		push_temporary(tmp_reg);
 	}
-	return tmp_reg;
+
+	switch (root->nature) {
+	case NODE_INTVAL : case NODE_BOOLVAL:
+		create_inst_ori(tmp_reg, $zero, root->value);		// Load value into tmp reg
+		create_inst_sw(tmp_reg, 0, address_reg);		// Store value into variable
+		break;
+
+	case NODE_IDENT:
+		if (root->global_decl)
+			create_inst_lui(tmp_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
+		else
+			create_inst_or(tmp_reg, $zero, $sp);			// Fetch stack address
+		create_inst_addiu(tmp_reg, tmp_reg, root->offset);		// Add offset
+		create_inst_lw(tmp_reg, 0, tmp_reg);				// Load value into registre
+		create_inst_sw(tmp_reg, 0, address_reg);			// Store value into variable
+		break;
+	
+	default:
+		expression_handler(root, tmp_reg);
+		create_inst_sw(tmp_reg, 0, address_reg);
+		break;
+	}
+	// Release registre
+	if (is_reg_available)
+		release_reg();
+	else
+		pop_temporary(tmp_reg);
+	return;
 }
 
-void reg_desallocation(int32_t tmp_reg, int is_reg_available)
+void expression_handler(node_t root, int32_t result_reg)
 {
-	if (!is_reg_available)
-		pop_temporary(tmp_reg);
-	else
+	if (root->nature == NODE_BOOLVAL || root->nature == NODE_INTVAL) {
+		create_inst_ori(result_reg, $zero, root->value);
+		return;
+	}
+
+	int32_t tmp_reg;
+	int is_reg_available = reg_available();
+	// Allocate registre
+	if (is_reg_available) {
+		allocate_reg();
+		tmp_reg = get_current_reg();
+	} else {
+		create_inst_comment("push");
+		tmp_reg = get_restore_reg();
+		push_temporary(tmp_reg);
+	}
+
+	switch (root->nature) {
+	case NODE_PLUS:
+		create_inst_comment("plus");
+		expression_handler(root->opr[0], result_reg);
+		expression_handler(root->opr[1], tmp_reg);
+		create_inst_addu(result_reg, result_reg, tmp_reg); // TODO : Check overflow
+		break;
+	case NODE_IDENT:
+		if (root->global_decl)
+			create_inst_lui(tmp_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
+		else
+			create_inst_or(tmp_reg, $zero, $sp);			// Fetch stack address
+		create_inst_lw(result_reg, root->offset, tmp_reg);			// Add offset and load value
+		break;
+	}
+
+	// Release registre
+	if (is_reg_available)
 		release_reg();
+	else {
+		create_inst_comment("pop");
+		pop_temporary(tmp_reg);
+	}
+	return;
 }
