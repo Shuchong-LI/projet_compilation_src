@@ -18,18 +18,6 @@ int is_fun_decl = 0;
 int is_global = 0;
 int taille_pile = 0;
 
-/*
-faire une fonction d'erreur avec le numero de la ligne  de ce type2
-
-faire les tests en conséquence
-
-void yyerror(node_t * program_root, char * s) {
-    fprintf(stderr, "Error line %d: %s\n", yylineno, s);
-    exit(1);
-}
-
-*/
-// à améliorer
 void printerror(node_t node){
 	fprintf(stderr, "Error line %d: operateur incompatible avec operation\n", node->lineno);
 	exit(1);
@@ -81,8 +69,7 @@ node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 		case NODE_NE: // deux possibilités pour ce node : bool-bool et int-int
 			if ((n1->type == TYPE_INT) && (n2->type == TYPE_INT)){
 				return TYPE_BOOL;
-			}
-			if ((n1->type == TYPE_BOOL) && (n2->type == TYPE_BOOL)){
+			} else if ((n1->type == TYPE_BOOL) && (n2->type == TYPE_BOOL)){
 				return TYPE_BOOL;
 			}
 			printerror(n1);
@@ -244,14 +231,18 @@ void analyse_passe_1(node_t root) {
 		analyse_passe_1(root->opr[1]);
 		break;
 
-	case NODE_PLUS:
+	case NODE_PLUS: NODE_MINUS : NODE_MUL : NODE_DIV: NODE_MOD: 
+	NODE_BAND: NODE_BOR: NODE_BXOR: NODE_SLL: NODE:SRL: NODE_SRA:
+	NODE_EQ: NODE_NE: NODE_LT: NODE_GT: NODE_LE: NODE_GE: NODE_AND: NODE_OR:
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
+		root->type = type_op_binaire(root->nature, root->opr[0], root->opr[1]);
 		break;
 
-	case NODE_MINUS: NODE_BNOT: NODE_NOT:
-			type_op_unaire(root->nature, root);
-			break;
+	case NODE_UMINUS: NODE_BNOT: NODE_NOT:
+		type_op_unaire(root->opr[0]->nature, root);
+		root->type = type_op_unaire(root->nature, root);
+		break;
 
 	default:
 		break;
