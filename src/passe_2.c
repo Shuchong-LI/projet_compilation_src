@@ -127,7 +127,8 @@ void print_handler(node_t root)
 int32_t affect_handler(node_t root)
 {
 	switch (root->nature) {
-
+	default:
+		return 1;
 	}
 
 }
