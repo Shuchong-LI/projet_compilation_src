@@ -4,9 +4,11 @@
 #include "defs.h"
 #include "passe_1.h"
 #include "miniccutils.h"
-
+#include "common.h"
 
 extern int trace_level;
+
+node_t program_root;
 
 node_type current_node_type = TYPE_NONE;
 node_t lval = NULL;
@@ -66,6 +68,11 @@ node_type type_op_binaire(node_nature operateur, node_type type1, node_type type
 }
 
 void analyse_passe_1(node_t root) {
+	static int flag = 1;
+	if (flag) {
+		program_root = root;
+		flag = 0;
+	}
 	int32_t tmp_offset;
 	if (root == NULL)
 		return;
@@ -192,14 +199,38 @@ void analyse_passe_1(node_t root) {
 		break;
 
 	case NODE_IF:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
+		break;
 
+	case NODE_FOR:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
+		analyse_passe_1(root->opr[2]);
+		analyse_passe_1(root->opr[3]);
+		break;
+
+	case NODE_AFFECT:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
+		break;
+
+	case NODE_LT:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
+		break;
+
+	case NODE_PLUS:
+		analyse_passe_1(root->opr[0]);
+		analyse_passe_1(root->opr[1]);
 		break;
 	default:
 	}
 	return;
 
-free_program_after_error: //TODO: A modifie
+free_program_after_error:
 	free_global_strings();
-	free_nodes();
+	free_nodes(program_root);
+	yylex_destroy();
 	exit(1);
 }

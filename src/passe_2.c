@@ -6,6 +6,8 @@
 
 void print_handler(node_t root);
 void block_allocation(node_t root);
+/* Return the registrer of the result of the right hand expression */
+int32_t affect_handler(node_t root);
 int32_t reg_allocation(int *is_reg_available);
 void reg_desallocation(int32_t tmp_reg, int is_reg_available);
 
@@ -75,9 +77,24 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_AFFECT:
-		if (!reg_available) {
+		int32_t result_reg = affect_handler(root->opr[1]);
 
-		}
+		int32_t address_reg;
+		int is_reg_available;
+		address_reg = reg_allocation(&is_reg_available);
+		if (root->opr[0]->global_decl)
+			create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
+		else
+			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
+		
+		create_inst_sw(address_reg, root->opr[0]->offset, result_reg);	// Store right value of affect
+										// in memory
+
+		reg_desallocation(address_reg, is_reg_available);
+		break;
+
+	case NODE_PLUS:
+
 
 	default:
 		break;
@@ -107,6 +124,14 @@ void print_handler(node_t root)
 	}
 }
 
+int32_t affect_handler(node_t root)
+{
+	switch (root->nature) {
+
+	}
+
+}
+
 void block_allocation(node_t root)
 {
 	if (root == NULL)
@@ -134,7 +159,7 @@ void block_allocation(node_t root)
 	}
 }
 
-int32_t reg_allocation(int *is_reg_available)
+int32_t reg_allocation(int *is_reg_available) // TODO : a changer
 {
 	int32_t tmp_reg;
 	*is_reg_available = reg_available();
