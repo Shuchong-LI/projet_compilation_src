@@ -62,6 +62,7 @@ void parse_args(int argc, char ** argv) {
                     fprintf(stderr, "error: Option -r requiert un nombre entre 4 et 8\n");
                     exit(1);
                 }
+                set_max_registers(nbr_registre_max);
                 break;
             case 's':
                 stop_after_syntax = true;
