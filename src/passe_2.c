@@ -6,7 +6,7 @@
 
 void print_handler(node_t root);
 void block_allocation(node_t root);
-void right_affect_handler(node_t root, int32_t address_reg);
+int32_t right_affect_handler(node_t root);
 void expression_handler(node_t root, int32_t result_reg);
 
 void gen_code_passe_2(node_t root) {
@@ -75,6 +75,10 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_AFFECT:
+		create_inst_comment("AFFECT");
+
+		int32_t result_reg = right_affect_handler(root->opr[1]);
+
 		int32_t address_reg;
 		int is_reg_available = reg_available();
 		// Allocate register for address
@@ -93,7 +97,6 @@ void gen_code_passe_2(node_t root) {
 			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
 		create_inst_addiu(address_reg, address_reg, root->offset);		// Add the offset
 		
-		right_affect_handler(root->opr[1], address_reg);
 		//create_inst_sw(address_reg, root->opr[0]->offset, result_reg);	// Store right value of affect
 										// in memory
 
@@ -101,7 +104,6 @@ void gen_code_passe_2(node_t root) {
 			release_reg();
 		else
 			pop_temporary(address_reg);
-		//reg_desallocation(address_reg, is_reg_available);
 		break;
 
 	case NODE_PLUS:
@@ -165,7 +167,7 @@ void block_allocation(node_t root)
 			allocate_reg();
 			tmp_reg = get_current_reg();
 		} else {
-			tmp_reg = get_restore_reg();
+			tmp_reg = get_current_reg();
 			push_temporary(tmp_reg);
 		}
 
@@ -175,14 +177,16 @@ void block_allocation(node_t root)
 		// Release registre
 		if (is_reg_available)
 			release_reg();
-		else
-			pop_temporary(tmp_reg);
+		else {
+			pop_temporary(get_restore_reg());
+			create_inst_or(tmp_reg, $zero, get_restore_reg());
+		}
 		// TODO : operation
 		break;
 	}
 }
 
-void right_affect_handler(node_t root, int32_t address_reg)
+int32_t right_affect_handler(node_t root)
 {
 	int32_t tmp_reg;
 	int is_reg_available = reg_available();
@@ -191,14 +195,14 @@ void right_affect_handler(node_t root, int32_t address_reg)
 		allocate_reg();
 		tmp_reg = get_current_reg();
 	} else {
-		tmp_reg = get_restore_reg();
+		tmp_reg = get_current_reg();
 		push_temporary(tmp_reg);
 	}
 
 	switch (root->nature) {
 	case NODE_INTVAL : case NODE_BOOLVAL:
 		create_inst_ori(tmp_reg, $zero, root->value);		// Load value into tmp reg
-		create_inst_sw(tmp_reg, 0, address_reg);		// Store value into variable
+		//create_inst_sw(tmp_reg, 0, address_reg);		// Store value into variable
 		break;
 
 	case NODE_IDENT:
@@ -219,11 +223,23 @@ void right_affect_handler(node_t root, int32_t address_reg)
 	// Release registre
 	if (is_reg_available)
 		release_reg();
-	else
-		pop_temporary(tmp_reg);
+	else {
+		pop_temporary(get_restore_reg());
+		create_inst_or(tmp_reg, $zero, get_restore_reg());
+	}
 	return;
 }
 
+int expression_handler(node_t root)
+{
+	switch (root->nature) {
+	case NODE_INTVAL : case NODE_BOOLVAL:
+
+	case NODE_PLUS:
+	}
+}
+
+/*
 void expression_handler(node_t root, int32_t result_reg)
 {
 	if (root->nature == NODE_BOOLVAL || root->nature == NODE_INTVAL) {
@@ -238,8 +254,7 @@ void expression_handler(node_t root, int32_t result_reg)
 		allocate_reg();
 		tmp_reg = get_current_reg();
 	} else {
-		create_inst_comment("push");
-		tmp_reg = get_restore_reg();
+		tmp_reg = get_current_reg();
 		push_temporary(tmp_reg);
 	}
 
@@ -263,8 +278,9 @@ void expression_handler(node_t root, int32_t result_reg)
 	if (is_reg_available)
 		release_reg();
 	else {
-		create_inst_comment("pop");
-		pop_temporary(tmp_reg);
+		pop_temporary(get_restore_reg());
+		create_inst_or(tmp_reg, $zero, get_restore_reg());
 	}
 	return;
 }
+*/
