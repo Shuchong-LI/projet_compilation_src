@@ -144,7 +144,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
-	case NODE_LT: case NODE_GT:
+	case NODE_LT: case NODE_GT: case NODE_EQ: case NODE_NE:
 		expression_handler(root);
 		break;
 
@@ -207,7 +207,12 @@ void expression_handler(node_t root)
 	switch (root->nature) {
 	case NODE_INTVAL: case NODE_BOOLVAL:
 		tmp_reg = get_current_reg();
-		create_inst_ori(tmp_reg, $zero, root->value);
+		if (root->value <= 0xFFFF)
+			create_inst_ori(tmp_reg, $zero, root->value);
+		else {
+			create_inst_lui(tmp_reg, (root->value & 0xFFFF0000) >> 16);
+			create_inst_ori(tmp_reg, tmp_reg, root->value & 0x0000FFFF);
+		}
 		return;
 
 	case NODE_IDENT:
@@ -274,6 +279,37 @@ void expression_handler(node_t root)
 		} else
 			create_inst_slt(rreg, lreg, rreg);
 		break;
+
+	case NODE_GT:
+		if (lreg_available) {
+			create_inst_slt(lreg, rreg, lreg);
+			release_reg();
+		} else
+			create_inst_slt(rreg, rreg, lreg);
+		break;
+
+	case NODE_EQ:
+		if (lreg_available) {
+			create_inst_xor(lreg, rreg, lreg);
+			create_inst_sltiu(lreg, lreg, 1);
+			release_reg();
+		} else {
+			create_inst_xor(rreg, rreg, lreg);
+			create_inst_sltiu(rreg, rreg, 1);
+		}
+		break;
+
+	case NODE_NE:
+		if (lreg_available) {
+			create_inst_xor(lreg, rreg, lreg);
+			create_inst_sltu(lreg, $zero, lreg);
+			release_reg();
+		} else {
+			create_inst_xor(rreg, rreg, lreg);
+			create_inst_sltu(rreg, $zero, rreg);
+		}
+		break;
+
 	}
 }
 
