@@ -144,7 +144,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
-	case NODE_LT:
+	case NODE_LT: case NODE_GT:
 		expression_handler(root);
 		break;
 
@@ -203,11 +203,12 @@ void expression_handler(node_t root)
 	if (root == NULL)
 		return;
 
+	int32_t tmp_reg;
 	switch (root->nature) {
-	case NODE_INTVAL : case NODE_BOOLVAL:
-		int32_t tmp_reg = get_current_reg();
+	case NODE_INTVAL: case NODE_BOOLVAL:
+		tmp_reg = get_current_reg();
 		create_inst_ori(tmp_reg, $zero, root->value);
-		break;
+		return;
 
 	case NODE_IDENT:
 		int32_t add_reg = get_current_reg();
@@ -218,98 +219,60 @@ void expression_handler(node_t root)
 			create_inst_or(add_reg, $zero, $sp);
 
 		create_inst_lw(add_reg, root->offset, add_reg);
-		break;
-		
+		return;
 
-	case NODE_PLUS: {
-		// Left
+	case NODE_UMINUS:
 		expression_handler(root->opr[0]);
-		int32_t lreg = get_current_reg();
-		int lreg_available = reg_available();
-		if (lreg_available)
-			allocate_reg();
-		else
-			push_temporary(lreg);
+		tmp_reg = get_current_reg();
+		create_inst_subu(tmp_reg, $zero, tmp_reg);
+		return;
 
-		// Right
-		expression_handler(root->opr[1]);
-		
-		// Addition
-		if (!lreg_available) {
-			lreg = get_restore_reg();
-			pop_temporary(lreg);
-		}
-		int32_t rreg = get_current_reg();
+	default:
+	}
+	// Else it's an expression
 
+	// Left
+	expression_handler(root->opr[0]);
+	int32_t lreg = get_current_reg();
+	int lreg_available = reg_available();
+	if (lreg_available)
+		allocate_reg();
+	else
+		push_temporary(lreg);
+
+	// Right
+	expression_handler(root->opr[1]);
+	
+	// Operation
+	if (!lreg_available) {
+		lreg = get_restore_reg();
+		pop_temporary(lreg);
+	}
+	int32_t rreg = get_current_reg();
+
+	switch (root->nature) {
+	case NODE_PLUS:
 		if (lreg_available) {				// TODO : check for overflow
 			create_inst_addu(lreg, lreg, rreg);
 			release_reg();
 		} else
 			create_inst_addu(rreg, lreg, rreg);
-		}
 		break;
 
-	case NODE_MINUS: {
-		// Left
-		expression_handler(root->opr[0]);
-		int32_t lreg = get_current_reg();
-		int lreg_available = reg_available();
-		if (lreg_available)
-			allocate_reg();
-		else
-			push_temporary(lreg);
-
-		// Right
-		expression_handler(root->opr[1]);
-		
-		// Soustraction
-		if (!lreg_available) {
-			lreg = get_restore_reg();
-			pop_temporary(lreg);
-		}
-		int32_t rreg = get_current_reg();
-
+	case NODE_MINUS:
 		if (lreg_available) {				// TODO : check for overflow
 			create_inst_subu(lreg, lreg, rreg);
 			release_reg();
 		} else
 			create_inst_subu(rreg, lreg, rreg);
-		}
 		break;
 
-	case NODE_LT: {
-		// Left
-		expression_handler(root->opr[0]);
-		int32_t lreg = get_current_reg();
-		int lreg_available = reg_available();
-		if (lreg_available)
-			allocate_reg();
-		else
-			push_temporary(lreg);
-
-		// Right
-		expression_handler(root->opr[1]);
-		
-		// Less than
-		if (!lreg_available) {
-			lreg = get_restore_reg();
-			pop_temporary(lreg);
-		}
-		int32_t rreg = get_current_reg();
-
+	case NODE_LT:
 		if (lreg_available) {
 			create_inst_slt(lreg, lreg, rreg);
 			release_reg();
 		} else
 			create_inst_slt(rreg, lreg, rreg);
-		}
-		break;
-
-	case NODE_UMINUS: {
-		expression_handler(root->opr[0]);
-		int32_t tmp_reg = get_current_reg();
-		create_inst_subu(tmp_reg, $zero, tmp_reg);
-		}
 		break;
 	}
 }
