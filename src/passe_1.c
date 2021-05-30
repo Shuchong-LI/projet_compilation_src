@@ -19,13 +19,13 @@ int is_global = 0;
 int taille_pile = 0;
 
 void printerror(node_t node){
-	fprintf(stderr, "Error line %d: operateur incompatible avec operation\n", node->lineno);
+	fprintf(stderr, "Error line %d: operateur incompatible avec operation.\n", node->lineno);
 	exit(1);
 }
 
 node_type type_op_unaire(node_nature operateur, node_t noeud) {
 	switch (operateur) {
-	case NODE_MINUS: NODE_BNOT:
+	case NODE_UMINUS: case NODE_BNOT:
 		if (noeud->type != TYPE_INT){
 			printerror(noeud);
 		}
@@ -40,6 +40,10 @@ node_type type_op_unaire(node_nature operateur, node_t noeud) {
 	}
 }
 
+/*
+TODO: affichage erreur : variable a of type TYPE_BOOL is initialized with an expression of
+type TYPE INT. au lieu de operateur incompatible
+*/
 node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 	switch (operateur) {
 		case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
@@ -68,7 +72,7 @@ node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 				printerror(n2);
 			}
 			return TYPE_BOOL;
-		case NODE_NE: case NODE_EQ: // deux possibilités pour ce node : bool-bool et int-int
+		case NODE_NE: case NODE_EQ: // deux possibilités pour ces nodes : bool-bool et int-int
 			if ((n1->type == TYPE_INT) && (n2->type == TYPE_INT)){
 				return TYPE_BOOL;
 			} else if ((n1->type == TYPE_BOOL) && (n2->type == TYPE_BOOL)){
@@ -127,28 +131,28 @@ void analyse_passe_1(node_t root) {
 			lval = root;
 			tmp_offset = env_add_element(root->ident, root);
 			if (tmp_offset < 0) {
-				fprintf(stderr, "Erreur : variable %s deja declare\n", root->ident);
+				fprintf(stderr, "Error line %d: variable %s defined multiple times.\n", root->lineno, root->ident);
 				goto free_program_after_error;
 			}
 			root->offset = tmp_offset;
 			root->type = current_node_type;
 			if (root->type == TYPE_VOID) {
-				fprintf(stderr, "Error : void is not an allowed variable type\n");
+				fprintf(stderr, "Error line %d: void is not an allowed variable type.\n", root->lineno);
 				goto free_program_after_error;
 			}
 			root->global_decl = is_global;
 		} else if (is_fun_decl) {
 			if (strcmp(root->ident, "main") == 0 && current_node_type != TYPE_VOID) {
-				fprintf(stderr, "Erreur : main should be void type\n");
+				fprintf(stderr, "Error line %d: main should be void type.\n", root->lineno);
 				goto free_program_after_error;
 			}
 			root->type = current_node_type;
 			root->global_decl = is_global;
 		} else {
 			node_t tmp_node = (node_t) get_decl_node(root->ident);
-			// Si la variable n'a pas ete declare
+			// Si la variable n'a pas ete declaree
 			if (tmp_node == NULL) {
-				fprintf(stderr, "Erreur : variable %s non declare\n", root->ident);
+				fprintf(stderr, "Error line %d: variable '%s' undeclared.\n", root->lineno, root->ident);
 				goto free_program_after_error;
 			}
 			root->decl_node = tmp_node;
@@ -185,19 +189,11 @@ void analyse_passe_1(node_t root) {
 		break;
 
 	case NODE_STRINGVAL:
-		if (is_rval_in_decl) {
-			printf("Erreur : string litteral cannot be assigned to variable\n");
-			goto free_program_after_error;
-		}
 		root->offset = add_string(root->str);
 		break;
 
 	case NODE_INTVAL:
 		if (is_rval_in_decl) {
-			if (lval->type != TYPE_INT) {
-				printf("Erreur : %s is not int\n", lval->ident);
-				goto free_program_after_error;
-			}
 			lval->value = root->value;
 		}
 		break;
@@ -205,7 +201,7 @@ void analyse_passe_1(node_t root) {
 	case NODE_BOOLVAL:
 		if (is_rval_in_decl) {
 			if (current_node_type != TYPE_BOOL) {
-				printf("Erreur : %s is not bool\n", lval->ident);
+				printf("Error line %d: variable %s of type TYPE_BOOL is initialized with an expression of type %s.\n", lval->lineno, lval->ident, node_type2string(lval->type));
 				goto free_program_after_error;
 			}
 			lval->value = root->value;
@@ -218,8 +214,8 @@ void analyse_passe_1(node_t root) {
 
 	case NODE_IF:
 		analyse_passe_1(root->opr[0]);
-		if (root->nature != TYPE_BOOL) {
-			fprintf(stderr, "Erreur\n"); // TODO
+		if (root->opr[0]->type != TYPE_BOOL) {
+			fprintf(stderr, "Error line %d: 'if' condition does not have a boolean type.\n", root->opr[0]->lineno);
 			goto free_program_after_error;
 		}
 		analyse_passe_1(root->opr[1]);
@@ -228,14 +224,18 @@ void analyse_passe_1(node_t root) {
 	case NODE_FOR:
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
+		if ((root->opr[1]->type) != TYPE_BOOL) {
+			fprintf(stderr, "Error line %d: 'for' condition does not have a boolean type.\n", root->opr[1]->lineno);
+			goto free_program_after_error;
+		}
 		analyse_passe_1(root->opr[2]);
 		analyse_passe_1(root->opr[3]);
 		break;
 
-	case NODE_WHILE: //case NODE_DOWHILE:
+	case NODE_WHILE:
 		analyse_passe_1(root->opr[0]);
 		if ((root->opr[0]->type) != TYPE_BOOL) {
-			fprintf(stderr, "Erreur ligne %d : while condition does not have a boolean type.\n", root->opr[0]->lineno);
+			fprintf(stderr, "Error line %d: 'while' condition does not have a boolean type.\n", root->opr[0]->lineno);
 			goto free_program_after_error;
 		}
 		analyse_passe_1(root->opr[1]);
@@ -245,7 +245,7 @@ void analyse_passe_1(node_t root) {
 		analyse_passe_1(root->opr[0]);
 		analyse_passe_1(root->opr[1]);
 		if ((root->opr[1]->type) != TYPE_BOOL) {
-			fprintf(stderr, "Erreur ligne %d : 'while' condition in do-while statement does not have a boolean type.\n", root->opr[1]->lineno);
+			fprintf(stderr, "Error line %d: 'while' condition in do-while statement does not have a boolean type.\n", root->opr[1]->lineno);
 			goto free_program_after_error;
 		}
 		break;
@@ -260,8 +260,10 @@ void analyse_passe_1(node_t root) {
 		break;
 
 	case NODE_UMINUS: case NODE_BNOT: case NODE_NOT:
-		type_op_unaire(root->opr[0]->nature, root);
-		root->type = type_op_unaire(root->nature, root);
+		analyse_passe_1(root->opr[0]);
+		root->type = type_op_unaire(root->nature, root->opr[0]);
+		// type_op_unaire(root->opr[0]->nature, root);
+		// root->type = type_op_unaire(root->nature, root);
 		break;
 
 	default:

@@ -47,7 +47,7 @@ typedef enum node_nature_s {
     NODE_AND,
     NODE_OR,
     NODE_BAND,
-    NODE_BOR,
+    NODE_BOR,   
     NODE_BXOR,
     NODE_NOT,
     NODE_BNOT,
