@@ -199,7 +199,7 @@ void expression_handler(node_t root)
 		break;
 		
 
-	case NODE_PLUS:
+	case NODE_PLUS: {
 		// Left
 		expression_handler(root->opr[0]);
 		int32_t lreg = get_current_reg();
@@ -222,10 +222,37 @@ void expression_handler(node_t root)
 		if (lreg_available) {				// TODO : check for overflow
 			create_inst_addu(lreg, lreg, rreg);
 			release_reg();
-		} else {
+		} else
 			create_inst_addu(rreg, lreg, rreg);
 		}
+		break;
 
+	case NODE_MINUS: {
+		// Left
+		expression_handler(root->opr[0]);
+		int32_t lreg = get_current_reg();
+		int lreg_available = reg_available();
+		if (lreg_available)
+			allocate_reg();
+		else
+			push_temporary(lreg);
+
+		// Right
+		expression_handler(root->opr[1]);
+		
+		// Soustraction
+		if (!lreg_available) {
+			lreg = get_restore_reg();
+			pop_temporary(lreg);
+		}
+		int32_t rreg = get_current_reg();
+
+		if (lreg_available) {				// TODO : check for overflow
+			create_inst_subu(lreg, lreg, rreg);
+			release_reg();
+		} else
+			create_inst_addu(rreg, lreg, rreg);
+		}
 		break;
 	}
 }
