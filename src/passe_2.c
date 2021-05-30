@@ -4,12 +4,18 @@
 #include "defs.h"
 #include "passe_2.h"
 
+/* Notes : quand on load ou on store une valeur et que la variable est sur le stack
+ * on peut le faire en une instruction de moins en utilisant $sp
+ */
+
+
 void print_handler(node_t root);
 void block_allocation(node_t root);
 void expression_handler(node_t root);
 void for_handler(node_t root);
 void while_handler(node_t root);
 void do_while_handler(node_t root);
+void if_handler(node_t root);
 
 int label_num = 1;
 
@@ -26,6 +32,7 @@ void gen_code_passe_2(node_t root) {
 			create_inst_asciiz(NULL, get_global_string(i));
 
 		create_inst_text_sec();
+		create_inst_label_str("main");
 		gen_code_passe_2(root->opr[1]);
 
 		create_inst_comment("exit");
@@ -98,6 +105,11 @@ void gen_code_passe_2(node_t root) {
 		do_while_handler(root);
 		break;
 
+	case NODE_IF:
+		create_inst_comment("if");
+		if_handler(root);
+		break;
+
 	case NODE_AFFECT:
 		create_inst_comment("affect");
 
@@ -117,13 +129,12 @@ void gen_code_passe_2(node_t root) {
 			create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
 		else
 			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
-		
+
 		// Retrieve rvalue
 		if (!rreg_available) {
 			rreg = get_restore_reg();
 			pop_temporary(rreg);
 		}
-
 		// Store rvalue into lvalue
 		create_inst_sw(rreg, root->opr[0]->offset, address_reg);
 
@@ -177,11 +188,11 @@ void block_allocation(node_t root)
 		block_allocation(root->opr[1]);
 		break;
 	case NODE_DECL:
-		int32_t tmp_reg = get_current_reg();
-
-		create_inst_ori(tmp_reg, $zero, root->opr[0]->value);
-		create_inst_sw(tmp_reg, root->opr[0]->offset, $sp);
-
+		if (root->opr[1] != NULL) {
+			expression_handler(root->opr[1]);
+			int32_t tmp_reg = get_current_reg();
+			create_inst_sw(tmp_reg, root->opr[0]->offset, $sp);
+		}
 		// TODO : operation
 		break;
 	}
@@ -336,4 +347,18 @@ void do_while_handler(node_t root)
 	gen_code_passe_2(root->opr[0]);
 	gen_code_passe_2(root->opr[1]);
 	create_inst_bne(get_current_reg(), $zero, loop_start);
+}
+
+void if_handler(node_t root)
+{
+	int false_label = label_num++;
+	int end_if_label = label_num++;
+	gen_code_passe_2(root->opr[0]);					// Condition
+	create_inst_beq(get_current_reg(), $zero, false_label);
+	gen_code_passe_2(root->opr[1]);
+	create_inst_j(end_if_label);
+	create_inst_label(false_label);
+	if (root->nops > 2)
+		gen_code_passe_2(root->opr[2]);
+	create_inst_label(end_if_label);
 }

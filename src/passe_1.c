@@ -219,6 +219,8 @@ void analyse_passe_1(node_t root) {
 			goto free_program_after_error;
 		}
 		analyse_passe_1(root->opr[1]);
+		if (root->nops > 2)
+			analyse_passe_1(root->opr[2]);
 		break;
 
 	case NODE_FOR:
