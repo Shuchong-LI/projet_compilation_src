@@ -7,6 +7,9 @@
 void print_handler(node_t root);
 void block_allocation(node_t root);
 void expression_handler(node_t root);
+void for_handler(node_t root);
+
+int label_num = 1;
 
 void gen_code_passe_2(node_t root) {
 	if (root == NULL)
@@ -74,7 +77,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_FOR:
-		gen_code_passe_2(root->opr[0]);		// Handle the first instruction
+		for_handler(root);
 		break;
 
 	case NODE_AFFECT:
@@ -112,6 +115,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
+	case NODE_LT:
 		expression_handler(root);
 		break;
 
@@ -242,5 +246,54 @@ void expression_handler(node_t root)
 			create_inst_subu(rreg, lreg, rreg);
 		}
 		break;
+
+	case NODE_LT: {
+		// Left
+		expression_handler(root->opr[0]);
+		int32_t lreg = get_current_reg();
+		int lreg_available = reg_available();
+		if (lreg_available)
+			allocate_reg();
+		else
+			push_temporary(lreg);
+
+		// Right
+		expression_handler(root->opr[1]);
+		
+		// Less than
+		if (!lreg_available) {
+			lreg = get_restore_reg();
+			pop_temporary(lreg);
+		}
+		int32_t rreg = get_current_reg();
+
+		if (lreg_available) {
+			create_inst_slt(lreg, lreg, rreg);
+			release_reg();
+		} else
+			create_inst_slt(rreg, lreg, rreg);
+		}
+		break;
+
+	case NODE_UMINUS: {
+		expression_handler(root->opr[0]);
+		int32_t tmp_reg = get_current_reg();
+		create_inst_subu(tmp_reg, $zero, tmp_reg);
+		}
+		break;
 	}
+}
+
+void for_handler(node_t root)
+{
+	int for_start = label_num++;
+	int for_end = label_num++;
+	gen_code_passe_2(root->opr[0]);
+	create_inst_label(for_start);				// For loop begin
+	gen_code_passe_2(root->opr[1]);				// Expression
+	create_inst_beq(get_current_reg(), $zero, for_end);	// Check condition
+	gen_code_passe_2(root->opr[2]);				// Inside loop
+	gen_code_passe_2(root->opr[3]);				// Last instruction
+	create_inst_j(for_start);
+	create_inst_label(for_end);				// For loop end
 }
