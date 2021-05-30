@@ -11,7 +11,7 @@ void expression_handler(node_t root);
 void gen_code_passe_2(node_t root) {
 	if (root == NULL)
 		return;
-	
+
 	switch (root->nature) {
 	case NODE_PROGRAM:
 		create_inst_data_sec();
@@ -27,12 +27,12 @@ void gen_code_passe_2(node_t root) {
 		create_inst_ori($v0, $zero, EXIT_SYSCALL); // $v0 <- 10
 		create_inst_syscall();
 		break;
-	
+
 	case NODE_LIST:
 		gen_code_passe_2(root->opr[0]);
 		gen_code_passe_2(root->opr[1]);
 		break;
-		
+
 	case NODE_DECLS:
 		gen_code_passe_2(root->opr[1]);
 		break;
@@ -58,7 +58,7 @@ void gen_code_passe_2(node_t root) {
 		int32_t stack_size = get_temporary_max_offset() + root->offset;
 		create_inst_stack_deallocation(stack_size);
 		break;
-	
+
 	case NODE_BLOCK: //TODO
 		// Remplissage pile
 		block_allocation(root->opr[0]);
