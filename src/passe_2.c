@@ -8,6 +8,8 @@ void print_handler(node_t root);
 void block_allocation(node_t root);
 void expression_handler(node_t root);
 void for_handler(node_t root);
+void while_handler(node_t root);
+void do_while_handler(node_t root);
 
 int label_num = 1;
 
@@ -56,6 +58,10 @@ void gen_code_passe_2(node_t root) {
 			expression_handler(root);
 		break;
 
+	case NODE_INTVAL : case NODE_BOOLVAL:
+		expression_handler(root);
+		break;
+
 	case NODE_FUNC: //TODO
 		// Allocation pile
 		create_inst_or($fp, $zero, $sp);
@@ -73,15 +79,27 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PRINT:
+		create_inst_comment("print");
 		print_handler(root->opr[0]);
 		break;
 
 	case NODE_FOR:
+		create_inst_comment("for");
 		for_handler(root);
 		break;
 
+	case NODE_WHILE:
+		create_inst_comment("while");
+		while_handler(root);
+		break;
+
+	case NODE_DOWHILE:
+		create_inst_comment("do while");
+		do_while_handler(root);
+		break;
+
 	case NODE_AFFECT:
-		create_inst_comment("AFFECT");
+		create_inst_comment("affect");
 
 		// Right
 		expression_handler(root->opr[1]);
@@ -130,13 +148,11 @@ void print_handler(node_t root)
 		print_handler(root->opr[0]);
 		print_handler(root->opr[1]);
 	} else if (root->nature == NODE_STRINGVAL) {
-		create_inst_comment("print");
 		create_inst_ori($v0, $zero, PRINT_STRING_SYSCALL);		// $v0 <- 4
 		create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);		// fetch global address
 		create_inst_addiu($a0, $a0, root->offset);			// add the offset
 		create_inst_syscall();
 	} else {
-		create_inst_comment("print");
 		create_inst_ori($v0, $zero, PRINT_INTEGER_SYSCALL);		// $v0 <- 1
 		if (root->global_decl)
 			create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);	// fetch global address
@@ -173,6 +189,9 @@ void block_allocation(node_t root)
 
 void expression_handler(node_t root)
 {
+	if (root == NULL)
+		return;
+
 	switch (root->nature) {
 	case NODE_INTVAL : case NODE_BOOLVAL:
 		int32_t tmp_reg = get_current_reg();
@@ -296,4 +315,25 @@ void for_handler(node_t root)
 	gen_code_passe_2(root->opr[3]);				// Last instruction
 	create_inst_j(for_start);
 	create_inst_label(for_end);				// For loop end
+}
+
+void while_handler(node_t root)
+{
+	int while_start = label_num++;
+	int while_end = label_num++;
+	create_inst_label(while_start);
+	gen_code_passe_2(root->opr[0]);				// Check condition
+	create_inst_beq(get_current_reg(), $zero, while_end);
+	gen_code_passe_2(root->opr[1]);
+	create_inst_j(while_start);
+	create_inst_label(while_end);
+}
+
+void do_while_handler(node_t root)
+{
+	int loop_start = label_num++;
+	create_inst_label(loop_start);
+	gen_code_passe_2(root->opr[0]);
+	gen_code_passe_2(root->opr[1]);
+	create_inst_bne(get_current_reg(), $zero, loop_start);
 }
