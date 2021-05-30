@@ -41,12 +41,16 @@ void gen_code_passe_2(node_t root) {
 		gen_code_passe_2(root->opr[0]);
 		break;
 
-	case NODE_IDENT:
+	case NODE_IDENT: // Ya des trucs bizarres ici, mais ça a l'air de marcher
 		// Première déclaration
-		if (root->decl_node == NULL)
+		if (root->decl_node == NULL) {
 			// Variable globale
 			if (root->global_decl)
 				create_inst_word(root->ident, root->value);
+			root->decl_node = root;
+		}
+		else
+			expression_handler(root);
 		break;
 
 	case NODE_FUNC: //TODO
@@ -179,23 +183,7 @@ void expression_handler(node_t root)
 		else
 			create_inst_or(add_reg, $zero, $sp);
 
-		int add_reg_available = reg_available();
-		if (add_reg_available)
-			allocate_reg();
-		else
-			push_temporary(add_reg);
-
-		int32_t valreg = get_current_reg();
-
-		if (!add_reg_available) {
-			add_reg = get_restore_reg();
-			pop_temporary(add_reg);
-		}
-
-		create_inst_lw(valreg, root->offset, add_reg);
-
-		if (add_reg_available)
-			release_reg();
+		create_inst_lw(add_reg, root->offset, add_reg);
 		break;
 		
 
@@ -251,7 +239,7 @@ void expression_handler(node_t root)
 			create_inst_subu(lreg, lreg, rreg);
 			release_reg();
 		} else
-			create_inst_addu(rreg, lreg, rreg);
+			create_inst_subu(rreg, lreg, rreg);
 		}
 		break;
 	}
