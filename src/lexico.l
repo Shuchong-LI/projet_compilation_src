@@ -90,10 +90,16 @@ COMMENTAIRE     \/\/.*
 
 {ENTIER} {
                 /* A completer : affecter yylval.intval et faire des verifications */
+                long tmp;
                 if (yytext[1] == 'x')
-                    yylval.intval = strtol(yytext, NULL, 16);
+                    tmp = strtol(yytext, NULL, 16);
                 else
-                    yylval.intval = atoi(yytext);
+                    tmp = atol(yytext);
+                if (tmp > 0xFFFFFFFF) {
+                    fprintf(stderr, "Error line %d : Integer out of range\n", yylineno);
+                    exit(1);
+                }
+                yylval.intval = tmp;
                 return TOK_INTVAL;
 }
 
