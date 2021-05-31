@@ -73,8 +73,8 @@ COMMENTAIRE     \/\/.*
 ")"             return TOK_RPAR;
 "{"             return TOK_LACC;
 "}"             return TOK_RACC;
-">>"            return TOK_SRL;
-">>>"           return TOK_SRA;
+">>"            return TOK_SRA;
+">>>"           return TOK_SRL;
 "<<"            return TOK_SLL;
 ">="            return TOK_GE;
 "<="            return TOK_LE;

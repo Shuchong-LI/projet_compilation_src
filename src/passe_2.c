@@ -119,7 +119,7 @@ void gen_code_passe_2(node_t root) {
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
 	case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: case NODE_EQ: case NODE_NE:
 	case NODE_AND: case NODE_OR: case NODE_BAND: case NODE_BOR: case NODE_BXOR:
-	case NODE_NOT: case NODE_BNOT:
+	case NODE_NOT: case NODE_BNOT: case NODE_SLL: case NODE_SRA: case NODE_SRL:
 		expression_handler(root);
 		break;
 
@@ -375,11 +375,11 @@ void expression_handler(node_t root)
 	case NODE_EQ:
 		create_inst_comment("equal");
 		if (lreg_available) {
-			create_inst_xor(lreg, rreg, lreg);
+			create_inst_xor(lreg, lreg, rreg);
 			create_inst_sltiu(lreg, lreg, 1);
 			release_reg();
 		} else {
-			create_inst_xor(rreg, rreg, lreg);
+			create_inst_xor(rreg, lreg, rreg);
 			create_inst_sltiu(rreg, rreg, 1);
 		}
 		break;
@@ -387,11 +387,11 @@ void expression_handler(node_t root)
 	case NODE_NE:
 		create_inst_comment("not equal");
 		if (lreg_available) {
-			create_inst_xor(lreg, rreg, lreg);
+			create_inst_xor(lreg, lreg, rreg);
 			create_inst_sltu(lreg, $zero, lreg);
 			release_reg();
 		} else {
-			create_inst_xor(rreg, rreg, lreg);
+			create_inst_xor(rreg, lreg, rreg);
 			create_inst_sltu(rreg, $zero, rreg);
 		}
 		break;
@@ -399,28 +399,55 @@ void expression_handler(node_t root)
 	case NODE_AND: case NODE_BAND:
 		create_inst_comment("and");
 		if (lreg_available) {
-			create_inst_and(lreg, rreg, lreg);
+			create_inst_and(lreg, lreg, rreg);
 			release_reg();
 		} else
-			create_inst_and(rreg, rreg, lreg);
+			create_inst_and(rreg, lreg, rreg);
 		break;
 
 	case NODE_OR: case NODE_BOR:
 		create_inst_comment("or");
 		if (lreg_available) {
-			create_inst_or(lreg, rreg, lreg);
+			create_inst_or(lreg, lreg, rreg);
 			release_reg();
 		} else
-			create_inst_or(rreg, rreg, lreg);
+			create_inst_or(rreg, lreg, rreg);
 		break;
 
 	case NODE_BXOR:
 		create_inst_comment("xor");
 		if (lreg_available) {
-			create_inst_xor(lreg, rreg, lreg);
+			create_inst_xor(lreg, lreg, rreg);
 			release_reg();
 		} else
-			create_inst_xor(rreg, rreg, lreg);
+			create_inst_xor(rreg, lreg, rreg);
+		break;
+
+	case NODE_SLL:
+		create_inst_comment("sll");
+		if (lreg_available) {
+			create_inst_sllv(lreg, lreg, rreg);
+			release_reg();
+		} else
+			create_inst_sllv(rreg, lreg, rreg);
+		break;
+
+	case NODE_SRA:
+		create_inst_comment("sra");
+		if (lreg_available) {
+			create_inst_srav(lreg, lreg, rreg);
+			release_reg();
+		} else
+			create_inst_srav(rreg, lreg, rreg);
+		break;
+
+	case NODE_SRL:
+		create_inst_comment("srl");
+		if (lreg_available) {
+			create_inst_srlv(lreg, lreg, rreg);
+			release_reg();
+		} else
+			create_inst_srlv(rreg, lreg, rreg);
 		break;
 	}
 }
