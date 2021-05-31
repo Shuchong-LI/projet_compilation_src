@@ -118,6 +118,7 @@ void gen_code_passe_2(node_t root) {
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
 	case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: case NODE_EQ: case NODE_NE:
+	case NODE_AND: case NODE_OR: case NODE_BAND: case NODE_BOR: case NODE_BXOR:
 		expression_handler(root);
 		break;
 
@@ -378,6 +379,33 @@ void expression_handler(node_t root)
 			create_inst_xor(rreg, rreg, lreg);
 			create_inst_sltu(rreg, $zero, rreg);
 		}
+		break;
+
+	case NODE_AND: case NODE_BAND:
+		create_inst_comment("and");
+		if (lreg_available) {
+			create_inst_and(lreg, rreg, lreg);
+			release_reg();
+		} else
+			create_inst_and(rreg, rreg, lreg);
+		break;
+
+	case NODE_OR: case NODE_BOR:
+		create_inst_comment("or");
+		if (lreg_available) {
+			create_inst_or(lreg, rreg, lreg);
+			release_reg();
+		} else
+			create_inst_or(rreg, rreg, lreg);
+		break;
+
+	case NODE_BXOR:
+		create_inst_comment("xor");
+		if (lreg_available) {
+			create_inst_xor(lreg, rreg, lreg);
+			release_reg();
+		} else
+			create_inst_xor(rreg, rreg, lreg);
 		break;
 	}
 }
