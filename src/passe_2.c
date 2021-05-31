@@ -279,7 +279,7 @@ void expression_handler(node_t root)
 		break;
 
 	case NODE_MUL:
-		create_inst_comment("multiplication");
+		create_inst_comment("mult");
 		if (lreg_available) {
 			create_inst_mult(lreg, rreg);
 			create_inst_mflo(lreg);
@@ -287,6 +287,30 @@ void expression_handler(node_t root)
 		} else {
 			create_inst_mult(lreg, rreg);
 			create_inst_mflo(rreg);
+		}
+		break;
+
+	case NODE_DIV:
+		create_inst_comment("div");
+		if (lreg_available) {
+			create_inst_div(lreg, rreg);
+			create_inst_mflo(lreg);
+			release_reg();
+		} else {
+			create_inst_div(lreg, rreg);
+			create_inst_mflo(rreg);
+		}
+		break;
+
+	case NODE_MOD:
+		create_inst_comment("mod");
+		if (lreg_available) {
+			create_inst_div(lreg, rreg);
+			create_inst_mfhi(lreg);
+			release_reg();
+		} else {
+			create_inst_div(lreg, rreg);
+			create_inst_mfhi(rreg);
 		}
 		break;
 
