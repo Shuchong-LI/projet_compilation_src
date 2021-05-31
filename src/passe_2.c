@@ -310,6 +310,7 @@ void expression_handler(node_t root)
 		create_inst_comment("div");
 		if (lreg_available) {
 			create_inst_div(lreg, rreg);
+			create_inst_teq(rreg, $zero);
 			create_inst_mflo(lreg);
 			release_reg();
 		} else {
