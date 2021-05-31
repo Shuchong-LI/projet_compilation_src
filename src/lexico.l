@@ -97,6 +97,7 @@ COMMENTAIRE     \/\/.*
                     tmp = atol(yytext);
                 if (tmp > 0xFFFFFFFF) {
                     fprintf(stderr, "Error line %d : Integer out of range\n", yylineno);
+                    yylex_destroy();
                     exit(1);
                 }
                 yylval.intval = tmp;
@@ -117,6 +118,7 @@ COMMENTAIRE     \/\/.*
 
 . {
                 fprintf(stderr, "Error line %d: Lexical error\n", yylineno);
+                yylex_destroy();
                 exit(1);
 }
 
@@ -144,12 +146,7 @@ int main(int argc, char ** argv) {
     yyin = fopen(infile, "r");
     yyparse(&program_root);
     fclose(yyin);
-    check_program_tree(program_root);
     analyse_tree(program_root);
-    /*
-    if (check_program_tree(program_root))
-        printf("C'EST OK\n");
-    */
     yylex_destroy();
     return 0;
 }

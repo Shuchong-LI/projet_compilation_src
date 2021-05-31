@@ -22,9 +22,35 @@ extern bool stop_after_verif;
 extern int nbr_registre_max;
 
 
+
 void parse_args(int argc, char ** argv) {
     // A implementer (la ligne suivante est a changer)
     //infile = argv[1];
+    char *banner[9];
+
+    banner[0] = ",---.    ,---..-./`) ,---.   .--..-./`)     _______       _______    ";
+    banner[1] = "|    \\  /    |\\ .-.')|    \\  |  |\\ .-.')   /   __  \\     /   __  \\   ";
+    banner[2] = "|  ,  \\/  ,  |/ `-' \\|  ,  \\ |  |/ `-' \\  | ,_/  \\__)   | ,_/  \\__)  ";
+    banner[3] = "|  |\\_   /|  | `-'`\"`|  |\\_ \\|  | `-'`\"`,-./  )       ,-./  )        ";
+    banner[4] = "|  _( )_/ |  | .---. |  _( )_\\  | .---. \\  '_ '`)     \\  '_ '`)      ";
+    banner[5] = "| (_ o _) |  | |   | | (_ o _)  | |   |  > (_)  )  __  > (_)  )  __  ";
+    banner[6] = "|  (_,_)  |  | |   | |  (_,_)\\  | |   | (  .  .-'_/  )(  .  .-'_/  ) ";
+    banner[7] = "|  |      |  | |   | |  |    |  | |   |  `-'`-'     /  `-'`-'     /  ";
+    banner[8] = "'--'      '--' '---' '--'    '--' '---'    `._____.'     `._____.'   ";
+
+    char *banner2[10];
+    banner2[0] = "      ___                       ___                       ___           ___     ";
+    banner2[1] = "     /\\__\\          ___        /\\__\\          ___        /\\  \\         /\\  \\    ";
+    banner2[2] = "    /::|  |        /\\  \\      /::|  |        /\\  \\      /::\\  \\       /::\\  \\   ";
+    banner2[3] = "   /:|:|  |        \\:\\  \\    /:|:|  |        \\:\\  \\    /:/\\:\\  \\     /:/\\:\\  \\  ";
+    banner2[4] = "  /:/|:|__|__      /::\\__\\  /:/|:|  |__      /::\\__\\  /:/  \\:\\  \\   /:/  \\:\\  \\ ";
+    banner2[5] = " /:/ |::::\\__\\  __/:/\\/__/ /:/ |:| /\\__\\  __/:/\\/__/ /:/__/ \\:\\__\\ /:/__/ \\:\\__\\";
+    banner2[6] = " \\/__/~~/:/  / /\\/:/  /    \\/__|:|/:/  / /\\/:/  /    \\:\\  \\  \\/__/ \\:\\  \\  \\/__/";
+    banner2[7] = "       /:/  /  \\::/__/         |:/:/  /  \\::/__/      \\:\\  \\        \\:\\  \\      ";
+    banner2[8] = "      /:/  /    \\:\\__\\         |::/  /    \\:\\__\\       \\:\\  \\        \\:\\  \\     ";
+    banner2[9] = "     /:/  /      \\/__/         /:/  /      \\/__/        \\:\\__\\        \\:\\__\\    ";
+    banner2[10] = "     \\/__/                     \\/__/                     \\/__/         \\/__/    ";
+
     char c;
     char * end;
     while ((c = getopt (argc, argv, "bo:t:r:svh")) != -1) {
@@ -34,9 +60,9 @@ void parse_args(int argc, char ** argv) {
                     fprintf(stderr, "error: L'option -b ne peut etre utilisée que sans autre option et sans fichier source.\n");
                     exit(1);
                 }
-                printf("===================================================\n");
-                printf("minicc - Clement LEBOULENGER et Julie RAGO\n");
-                printf("===================================================\n");
+                for (int i = 0; i < 11; i++)
+                    printf("%s\n", banner2[i]);
+                printf("\nCompilateur de minic écrit par Julie Rago et Clément Leboulenger d'après le code de Quentin Meunier\n");
                 exit(0);
             case 'o':
                 outfile = optarg;
