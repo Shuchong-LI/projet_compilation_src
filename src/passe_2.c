@@ -117,7 +117,7 @@ void gen_code_passe_2(node_t root) {
 		break;
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
-	case NODE_LT: case NODE_GT: case NODE_EQ: case NODE_NE:
+	case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: case NODE_EQ: case NODE_NE:
 		expression_handler(root);
 		break;
 
@@ -330,6 +330,30 @@ void expression_handler(node_t root)
 			release_reg();
 		} else
 			create_inst_slt(rreg, rreg, lreg);
+		break;
+
+	case NODE_LE:
+		create_inst_comment("less or equal");
+		if (lreg_available) {
+			create_inst_slt(lreg, rreg, lreg);
+			create_inst_xori(lreg, lreg, 1);
+			release_reg();
+		} else {
+			create_inst_slt(rreg, rreg, lreg);
+			create_inst_xori(rreg, rreg, 1);
+		}
+		break;
+
+	case NODE_GE:
+		create_inst_comment("greater or equal");
+		if (lreg_available) {
+			create_inst_slt(lreg, lreg, rreg);
+			create_inst_xori(lreg, lreg, 1);
+			release_reg();
+		} else {
+			create_inst_slt(rreg, lreg, rreg);
+			create_inst_xori(rreg, rreg, 1);
+		}
 		break;
 
 	case NODE_EQ:
