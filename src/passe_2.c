@@ -11,6 +11,7 @@
 
 void print_handler(node_t root);
 void block_allocation(node_t root);
+void affect_handler(node_t root);
 void expression_handler(node_t root);
 void for_handler(node_t root);
 void while_handler(node_t root);
@@ -112,35 +113,7 @@ void gen_code_passe_2(node_t root) {
 
 	case NODE_AFFECT:
 		create_inst_comment("affect");
-
-		// Right
-		expression_handler(root->opr[1]);
-		int32_t rreg = get_current_reg();
-		int rreg_available = reg_available();
-		if (rreg_available)
-			allocate_reg();
-		else
-			push_temporary(rreg);
-
-		// Left : get address of variable
-		int32_t address_reg = get_current_reg();
-		// Get address of lvalue
-		if (root->opr[0]->global_decl)
-			create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
-		else
-			create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
-
-		// Retrieve rvalue
-		if (!rreg_available) {
-			rreg = get_restore_reg();
-			pop_temporary(rreg);
-		}
-		// Store rvalue into lvalue
-		create_inst_sw(rreg, root->opr[0]->offset, address_reg);
-
-		if (rreg_available)
-			release_reg();
-
+		affect_handler(root);
 		break;
 
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
@@ -198,6 +171,37 @@ void block_allocation(node_t root)
 	}
 }
 
+void affect_handler(node_t root)
+{
+	// Right
+	expression_handler(root->opr[1]);
+	int32_t rreg = get_current_reg();
+	int rreg_available = reg_available();
+	if (rreg_available)
+		allocate_reg();
+	else
+		push_temporary(rreg);
+
+	// Left : get address of variable
+	int32_t address_reg = get_current_reg();
+	// Get address of lvalue
+	if (root->opr[0]->global_decl)
+		create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
+	else
+		create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
+
+	// Retrieve rvalue
+	if (!rreg_available) {
+		rreg = get_restore_reg();
+		pop_temporary(rreg);
+	}
+	// Store rvalue into lvalue
+	create_inst_sw(rreg, root->opr[0]->offset, address_reg);
+
+	if (rreg_available)
+		release_reg();
+}
+
 void expression_handler(node_t root)
 {
 	if (root == NULL)
@@ -207,7 +211,7 @@ void expression_handler(node_t root)
 	switch (root->nature) {
 	case NODE_INTVAL: case NODE_BOOLVAL:
 		tmp_reg = get_current_reg();
-		if (root->value <= 0xFFFF)
+		if ((root->value & 0xFFFF0000) == 0) // Si la valeur est sur 16 bits
 			create_inst_ori(tmp_reg, $zero, root->value);
 		else {
 			create_inst_lui(tmp_reg, (root->value & 0xFFFF0000) >> 16);
@@ -257,6 +261,7 @@ void expression_handler(node_t root)
 
 	switch (root->nature) {
 	case NODE_PLUS:
+		create_inst_comment("plus");
 		if (lreg_available) {				// TODO : check for overflow
 			create_inst_addu(lreg, lreg, rreg);
 			release_reg();
@@ -265,6 +270,7 @@ void expression_handler(node_t root)
 		break;
 
 	case NODE_MINUS:
+		create_inst_comment("minus");
 		if (lreg_available) {				// TODO : check for overflow
 			create_inst_subu(lreg, lreg, rreg);
 			release_reg();
@@ -272,7 +278,20 @@ void expression_handler(node_t root)
 			create_inst_subu(rreg, lreg, rreg);
 		break;
 
+	case NODE_MUL:
+		create_inst_comment("multiplication");
+		if (lreg_available) {
+			create_inst_mult(lreg, rreg);
+			create_inst_mflo(lreg);
+			release_reg();
+		} else {
+			create_inst_mult(lreg, rreg);
+			create_inst_mflo(rreg);
+		}
+		break;
+
 	case NODE_LT:
+		create_inst_comment("less than");
 		if (lreg_available) {
 			create_inst_slt(lreg, lreg, rreg);
 			release_reg();
@@ -281,6 +300,7 @@ void expression_handler(node_t root)
 		break;
 
 	case NODE_GT:
+		create_inst_comment("greater than");
 		if (lreg_available) {
 			create_inst_slt(lreg, rreg, lreg);
 			release_reg();
@@ -289,6 +309,7 @@ void expression_handler(node_t root)
 		break;
 
 	case NODE_EQ:
+		create_inst_comment("equal");
 		if (lreg_available) {
 			create_inst_xor(lreg, rreg, lreg);
 			create_inst_sltiu(lreg, lreg, 1);
@@ -300,6 +321,7 @@ void expression_handler(node_t root)
 		break;
 
 	case NODE_NE:
+		create_inst_comment("not equal");
 		if (lreg_available) {
 			create_inst_xor(lreg, rreg, lreg);
 			create_inst_sltu(lreg, $zero, lreg);
@@ -309,7 +331,6 @@ void expression_handler(node_t root)
 			create_inst_sltu(rreg, $zero, rreg);
 		}
 		break;
-
 	}
 }
 
