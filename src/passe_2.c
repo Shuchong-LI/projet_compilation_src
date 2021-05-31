@@ -232,6 +232,10 @@ void expression_handler(node_t root)
 		create_inst_lw(add_reg, root->offset, add_reg);
 		return;
 
+	case NODE_AFFECT:
+		gen_code_passe_2(root);
+		return;
+
 	case NODE_UMINUS:
 		expression_handler(root->opr[0]);
 		tmp_reg = get_current_reg();
