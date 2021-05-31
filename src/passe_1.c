@@ -181,6 +181,13 @@ void analyse_passe_1(node_t root) {
 		is_rval_in_decl = 1;
 		analyse_passe_1(root->opr[1]);
 		is_rval_in_decl = 0;
+		if (root->opr[0]->type != root->opr[1]->type) {
+			fprintf(stderr, "Error line %d: variable of %s is initialized with %s\n",
+					      root->lineno, node_type2string(root->opr[0]->type),
+							   node_type2string(root->opr[1]->type));
+			goto free_program_after_error;
+		}
+
 		break;
 
 	case NODE_LIST:
