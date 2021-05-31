@@ -119,6 +119,7 @@ void gen_code_passe_2(node_t root) {
 	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
 	case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: case NODE_EQ: case NODE_NE:
 	case NODE_AND: case NODE_OR: case NODE_BAND: case NODE_BOR: case NODE_BXOR:
+	case NODE_NOT: case NODE_BNOT:
 		expression_handler(root);
 		break;
 
@@ -237,9 +238,23 @@ void expression_handler(node_t root)
 		create_inst_subu(tmp_reg, $zero, tmp_reg);
 		return;
 
+	case NODE_NOT:
+		create_inst_comment("not");
+		expression_handler(root->opr[0]);
+		tmp_reg = get_current_reg();
+		create_inst_xori(tmp_reg, tmp_reg, 1);
+		return;
+
+	case NODE_BNOT:
+		create_inst_comment("not");
+		expression_handler(root->opr[0]);
+		tmp_reg = get_current_reg();
+		create_inst_nor(tmp_reg, $zero, tmp_reg);
+		return;
+
 	default:
 	}
-	// Else it's an expression
+	// Else it's a binary expression
 
 	// Left
 	expression_handler(root->opr[0]);
