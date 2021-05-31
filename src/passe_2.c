@@ -315,6 +315,7 @@ void expression_handler(node_t root)
 			release_reg();
 		} else {
 			create_inst_div(lreg, rreg);
+			create_inst_teq(rreg, $zero);
 			create_inst_mflo(rreg);
 		}
 		break;
@@ -323,10 +324,12 @@ void expression_handler(node_t root)
 		create_inst_comment("mod");
 		if (lreg_available) {
 			create_inst_div(lreg, rreg);
+			create_inst_teq(rreg, $zero);
 			create_inst_mfhi(lreg);
 			release_reg();
 		} else {
 			create_inst_div(lreg, rreg);
+			create_inst_teq(rreg, $zero);
 			create_inst_mfhi(rreg);
 		}
 		break;
