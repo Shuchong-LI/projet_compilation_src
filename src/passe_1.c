@@ -40,10 +40,6 @@ node_type type_op_unaire(node_nature operateur, node_t noeud) {
 	}
 }
 
-/*
-TODO: affichage erreur : variable a of type TYPE_BOOL is initialized with an expression of
-type TYPE INT. au lieu de operateur incompatible
-*/
 node_type type_op_binaire(node_nature operateur, node_t n1, node_t n2) {
 	switch (operateur) {
 		case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
@@ -271,8 +267,6 @@ void analyse_passe_1(node_t root) {
 	case NODE_UMINUS: case NODE_BNOT: case NODE_NOT:
 		analyse_passe_1(root->opr[0]);
 		root->type = type_op_unaire(root->nature, root->opr[0]);
-		// type_op_unaire(root->opr[0]->nature, root);
-		// root->type = type_op_unaire(root->nature, root);
 		break;
 
 	default:
