@@ -138,6 +138,10 @@ void analyse_passe_1(node_t root) {
 			}
 			root->global_decl = is_global;
 		} else if (is_fun_decl) {
+			if (strcmp(root->ident, "main") != 0) {
+				fprintf(stderr, "Error line %d: main function should be called main\n", root->lineno);
+				goto free_program_after_error;
+			}
 			if (strcmp(root->ident, "main") == 0 && current_node_type != TYPE_VOID) {
 				fprintf(stderr, "Error line %d: main should be void type.\n", root->lineno);
 				goto free_program_after_error;
