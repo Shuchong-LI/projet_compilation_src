@@ -1,1 +1,0 @@
-affecter des variables de plus de 2^16 (devrait être possible)
