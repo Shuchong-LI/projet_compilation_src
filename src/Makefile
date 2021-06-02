@@ -64,5 +64,5 @@ clean:
 
 realclean: clean
 	@echo "| Cleaning lex and yacc files, and executable"
-	@rm -f y.tab.c y.tab.h lex.yy.c *.dot *.s $(EXE)
+	@rm -f y.tab.c y.tab.h lex.yy.c *.dot *.s *.txt $(EXE)
 
