@@ -133,10 +133,17 @@ int yywrap(void) {
 int main(int argc, char ** argv) {
 
     if (argc < 2) {
-        printf("Usage : minicc file.c pour compiler le fichier file.c\n");
+        printf("Usage : ./minicc <options> <infile>\n\n");
+		printf("Options disponibles :\n");
+		printf("-b : banniere\n");
+		printf("-o <filename> : nom du fichier assembleur produit\n");
+		printf("-t <int> : niveau de trace (entre 0 et 5)\n");
+		printf("-r <int> : nombre maximum de registres (entre 4 et 8)\n");
+		printf("-s : arreter la compilation apres l'analyse syntaxique\n");
+		printf("-v : arreter la compilation apres la passe de verifications\n");
         return 0;
     }
-    
+
     node_t program_root;
     parse_args(argc, argv);
     #if YYDEBUG
