@@ -1,0 +1,4 @@
+void tata()
+{
+	print("Bonjur");
+}
