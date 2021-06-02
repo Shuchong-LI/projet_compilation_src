@@ -468,8 +468,8 @@ void for_handler(node_t root)
 	create_inst_label(for_start);				// For loop begin
 	gen_code_passe_2(root->opr[1]);				// Expression
 	create_inst_beq(get_current_reg(), $zero, for_end);	// Check condition
-	gen_code_passe_2(root->opr[2]);				// Inside loop
 	gen_code_passe_2(root->opr[3]);				// Last instruction
+	gen_code_passe_2(root->opr[2]);				// Inside loop
 	create_inst_j(for_start);
 	create_inst_label(for_end);				// For loop end
 }
