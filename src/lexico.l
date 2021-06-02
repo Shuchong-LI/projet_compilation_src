@@ -144,6 +144,10 @@ int main(int argc, char ** argv) {
     #endif
 
     yyin = fopen(infile, "r");
+    if (yyin == NULL) {
+        fprintf(stderr, "Error : impossible d'ouvrir le fichier %s\n", infile);
+        exit(1);
+    }
     yyparse(&program_root);
     fclose(yyin);
     analyse_tree(program_root);
