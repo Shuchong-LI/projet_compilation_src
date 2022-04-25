@@ -1,510 +1,765 @@
-#include "miniccutils.h"
+
+// #include <stdio.h>
+
+// #include "defs.h"
+// #include "passe_2.h"
+
+// void gen_code_passe_2(node_t root) {
+
+// }
+
 #include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 
 #include "defs.h"
 #include "passe_2.h"
+#include "miniccutils.h"
 
-/* Notes : quand on load ou on store une valeur et que la variable est sur le stack
- * on peut le faire en une instruction de moins en utilisant $sp
- */
+extern bool is_global;
+
+extern int trace_level;
 
 
-void print_handler(node_t root);
-void block_allocation(node_t root);
-void affect_handler(node_t root);
-void expression_handler(node_t root);
-void for_handler(node_t root);
-void while_handler(node_t root);
-void do_while_handler(node_t root);
-void if_handler(node_t root);
+// void analyse_passe_1(node_t root) {
 
-int label_num = 1;
+// }
 
 void gen_code_passe_2(node_t root) {
-	if (root == NULL)
-		return;
+	printf("------------------------------------------------start passe_2----------------------------------------------\n");
+	assert(root->nature == NODE_PROGRAM);
 
-	switch (root->nature) {
-	case NODE_PROGRAM:
-		create_inst_data_sec();
-		gen_code_passe_2(root->opr[0]);
-		// Allocation des chaines des caracteres
-		for (int i = 0; i < get_global_strings_number(); i++)
-			create_inst_asciiz(NULL, get_global_string(i));
+	inst_create_data_sec();
 
-		create_inst_text_sec();
-		create_inst_label_str("main");
-		gen_code_passe_2(root->opr[1]);
+	is_global = 1;
 
-		create_inst_comment("exit");
-		create_inst_ori($v0, $zero, EXIT_SYSCALL); // $v0 <- 10
-		create_inst_syscall();
-		break;
+	gen_vardecls(root->opr[0]);
+	printf("return to analyse_passe_1\n");
 
-	case NODE_LIST:
-		gen_code_passe_2(root->opr[0]);
-		gen_code_passe_2(root->opr[1]);
-		break;
+	for (int i = 0; i < get_global_strings_number(); i++)
+			inst_create_asciiz(NULL, get_global_string(i));
 
-	case NODE_DECLS:
-		gen_code_passe_2(root->opr[1]);
-		break;
+	inst_create_text_sec();
+	inst_create_label_str("main");
 
-	case NODE_DECL:
-		gen_code_passe_2(root->opr[0]);
-		break;
+	gen_main(root->opr[1]);
+	//inst_create_comment("exit");
 
-	case NODE_IDENT: // Ya des trucs bizarres ici, mais ça a l'air de marcher
-		// Première déclaration
-		if (root->decl_node == NULL) {
-			// Variable globale
-			if (root->global_decl)
-				create_inst_word(root->ident, root->value);
-			root->decl_node = root;
-		}
-		else
-			expression_handler(root);
-		break;
-
-	case NODE_INTVAL : case NODE_BOOLVAL:
-		expression_handler(root);
-		break;
-
-	case NODE_FUNC: //TODO
-		// Allocation pile
-		create_inst_or($fp, $zero, $sp);
-		set_temporary_start_offset(root->offset);
-		create_inst_stack_allocation();
-		gen_code_passe_2(root->opr[2]);
-		int32_t stack_size = get_temporary_max_offset() + root->offset;
-		create_inst_stack_deallocation(stack_size);
-		break;
-
-	case NODE_BLOCK: //TODO
-		// Remplissage pile
-		block_allocation(root->opr[0]);
-		gen_code_passe_2(root->opr[1]);
-		break;
-
-	case NODE_PRINT:
-		create_inst_comment("print");
-		print_handler(root->opr[0]);
-		break;
-
-	case NODE_FOR:
-		create_inst_comment("for");
-		for_handler(root);
-		break;
-
-	case NODE_WHILE:
-		create_inst_comment("while");
-		while_handler(root);
-		break;
-
-	case NODE_DOWHILE:
-		create_inst_comment("do while");
-		do_while_handler(root);
-		break;
-
-	case NODE_IF:
-		create_inst_comment("if");
-		if_handler(root);
-		break;
-
-	case NODE_AFFECT:
-		create_inst_comment("affect");
-		affect_handler(root);
-		break;
-
-	case NODE_PLUS: case NODE_MINUS: case NODE_MUL: case NODE_DIV: case NODE_MOD:
-	case NODE_LT: case NODE_GT: case NODE_LE: case NODE_GE: case NODE_EQ: case NODE_NE:
-	case NODE_AND: case NODE_OR: case NODE_BAND: case NODE_BOR: case NODE_BXOR:
-	case NODE_NOT: case NODE_BNOT: case NODE_SLL: case NODE_SRA: case NODE_SRL:
-		expression_handler(root);
-		break;
-
-	default:
-		break;
-	}
+	inst_create_ori($v0, $zero, EXIT_SYSCALL);
+	inst_create_syscall();
 }
 
-void print_handler(node_t root)
-{
-	if (root->nature == NODE_LIST) {
-		print_handler(root->opr[0]);
-		print_handler(root->opr[1]);
-	} else if (root->nature == NODE_STRINGVAL) {
-		create_inst_ori($v0, $zero, PRINT_STRING_SYSCALL);		// $v0 <- 4
-		create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);		// fetch global address
-		create_inst_addiu($a0, $a0, root->offset);			// add the offset
-		create_inst_syscall();
-	} else {
-		create_inst_ori($v0, $zero, PRINT_INTEGER_SYSCALL);		// $v0 <- 1
-		if (root->global_decl)
-			create_inst_lui($a0, DATA_SECTION_BASE_ADDRESS);	// fetch global address
-		else
-			create_inst_or($a0, $zero, $sp);			// fetch stack address
-		create_inst_lw($a0, root->offset, $a0);				// add the offset
-		create_inst_syscall();
+void gen_vardecls(node_t node){
+	printf("start gen_vardecls\n");
+	 assert(node == NULL || node->nature == NODE_LIST || node->nature == NODE_DECLS);
+
+	if(node == NULL){
+		return;
 	}
+
+	switch(node->nature){
+		case NODE_LIST:
+			gen_decls_list(node->opr[0]);
+			printf("return to gen_vardecls\n");
+			gen_decls(node->opr[1]);
+			printf("return to gen_vardecls\n");break;
+		case NODE_DECLS:
+			gen_type(node->opr[0]);
+			printf("return to gen_vardecls\n");
+			gen_decl_list(node->opr[1]);
+			printf("return to gen_vardecls\n");break;
+	}
+	return;
 }
 
-void block_allocation(node_t root)
-{
-	if (root == NULL)
-		return;
+void gen_decls_list(node_t node){
+	printf("start gen_decls_list\n");
+	assert(node->nature ==NODE_LIST || node->nature ==NODE_DECLS);
 
-	switch (root->nature) {
-	case NODE_LIST:
-		block_allocation(root->opr[0]);
-		block_allocation(root->opr[1]);
-		break;
-	case NODE_DECLS:
-		block_allocation(root->opr[1]);
-		break;
-	case NODE_DECL:
-		if (root->opr[1] != NULL) {
-			expression_handler(root->opr[1]);
-			int32_t tmp_reg = get_current_reg();
-			create_inst_sw(tmp_reg, root->opr[0]->offset, $sp);
-		}
-		// TODO : operation
-		break;
-	}
-}
+	switch(node->nature){
+		case NODE_LIST:
+			gen_decls_list(node->opr[0]);
+			printf("return to gen_decls_list\n");
+			gen_decls(node->opr[1]);
+			printf("return to gen_decls_list\n");break;
 
-void affect_handler(node_t root)
-{
-	// Right
-	expression_handler(root->opr[1]);
-	int32_t rreg = get_current_reg();
-	int rreg_available = reg_available();
-	if (rreg_available)
-		allocate_reg();
-	else
-		push_temporary(rreg);
+		case NODE_DECLS:
+			gen_type(node->opr[0]);
+			printf("return to gen_decls_list\n");
 
-	// Left : get address of variable
-	int32_t address_reg = get_current_reg();
-	// Get address of lvalue
-	if (root->opr[0]->global_decl)
-		create_inst_lui(address_reg, DATA_SECTION_BASE_ADDRESS);	// Fetch global address
-	else
-		create_inst_or(address_reg, $zero, $sp);			// Fetch stack address
-
-	// Retrieve rvalue
-	if (!rreg_available) {
-		rreg = get_restore_reg();
-		pop_temporary(rreg);
-	}
-	// Store rvalue into lvalue
-	create_inst_sw(rreg, root->opr[0]->offset, address_reg);
-
-	if (rreg_available)
-		release_reg();
-}
-
-void expression_handler(node_t root)
-{
-	if (root == NULL)
-		return;
-
-	int32_t tmp_reg;
-	switch (root->nature) {
-	case NODE_INTVAL: case NODE_BOOLVAL:
-		tmp_reg = get_current_reg();
-		if ((root->value & 0xFFFF0000) == 0) // Si la valeur est sur 16 bits
-			create_inst_ori(tmp_reg, $zero, root->value);
-		else {
-			create_inst_lui(tmp_reg, (root->value & 0xFFFF0000) >> 16);
-			create_inst_ori(tmp_reg, tmp_reg, root->value & 0x0000FFFF);
-		}
-		return;
-
-	case NODE_IDENT:
-		int32_t add_reg = get_current_reg();
-
-		if (root->global_decl)
-			create_inst_lui(add_reg, DATA_SECTION_BASE_ADDRESS);
-		else
-			create_inst_or(add_reg, $zero, $sp);
-
-		create_inst_lw(add_reg, root->offset, add_reg);
-		return;
-
-	case NODE_AFFECT:
-		gen_code_passe_2(root);
-		return;
-
-	case NODE_UMINUS:
-		expression_handler(root->opr[0]);
-		tmp_reg = get_current_reg();
-		create_inst_subu(tmp_reg, $zero, tmp_reg);
-		return;
-
-	case NODE_NOT:
-		create_inst_comment("not");
-		expression_handler(root->opr[0]);
-		tmp_reg = get_current_reg();
-		create_inst_xori(tmp_reg, tmp_reg, 1);
-		return;
-
-	case NODE_BNOT:
-		create_inst_comment("not");
-		expression_handler(root->opr[0]);
-		tmp_reg = get_current_reg();
-		create_inst_nor(tmp_reg, $zero, tmp_reg);
-		return;
-
-	default:
-	}
-	// Else it's a binary expression
-
-	// Left
-	expression_handler(root->opr[0]);
-	int32_t lreg = get_current_reg();
-	int lreg_available = reg_available();
-	if (lreg_available)
-		allocate_reg();
-	else
-		push_temporary(lreg);
-
-	// Right
-	expression_handler(root->opr[1]);
+			gen_decl_list(node->opr[1]);
+			printf("return to gen_decls_list\n");break;
 	
-	// Operation
-	if (!lreg_available) {
-		lreg = get_restore_reg();
-		pop_temporary(lreg);
 	}
-	int32_t rreg = get_current_reg();
+	return;
+}
 
-	switch (root->nature) {
-	case NODE_PLUS:
-		create_inst_comment("plus");
-		if (lreg_available) {				// TODO : check for overflow
-			create_inst_addu(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_addu(rreg, lreg, rreg);
-		break;
+void gen_decls(node_t node){
+	printf("start gen_decls\n");	
+	assert(node->nature ==NODE_DECLS);
 
-	case NODE_MINUS:
-		create_inst_comment("minus");
-		if (lreg_available) {				// TODO : check for overflow
-			create_inst_subu(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_subu(rreg, lreg, rreg);
-		break;
+	switch(node->nature){
+		case NODE_DECLS:
+			gen_type(node->opr[0]);
+			printf("return to gen_decls\n");
 
-	case NODE_MUL:
-		create_inst_comment("mult");
-		if (lreg_available) {
-			create_inst_mult(lreg, rreg);
-			create_inst_mflo(lreg);
-			release_reg();
-		} else {
-			create_inst_mult(lreg, rreg);
-			create_inst_mflo(rreg);
-		}
-		break;
+			gen_decl_list(node->opr[1]);
+			printf("return to gen_decls\n");break;
 
-	case NODE_DIV:
-		create_inst_comment("div");
-		if (lreg_available) {
-			create_inst_div(lreg, rreg);
-			create_inst_teq(rreg, $zero);
-			create_inst_mflo(lreg);
-			release_reg();
-		} else {
-			create_inst_div(lreg, rreg);
-			create_inst_teq(rreg, $zero);
-			create_inst_mflo(rreg);
-		}
-		break;
+	} 
+	return;
+}
 
-	case NODE_MOD:
-		create_inst_comment("mod");
-		if (lreg_available) {
-			create_inst_div(lreg, rreg);
-			create_inst_teq(rreg, $zero);
-			create_inst_mfhi(lreg);
-			release_reg();
-		} else {
-			create_inst_div(lreg, rreg);
-			create_inst_teq(rreg, $zero);
-			create_inst_mfhi(rreg);
-		}
-		break;
+void gen_decl_list(node_t node){
+	printf("start gen_decl_list\n");	
+	assert(node->nature ==NODE_LIST || node->nature ==NODE_DECL); 
 
-	case NODE_LT:
-		create_inst_comment("less than");
-		if (lreg_available) {
-			create_inst_slt(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_slt(rreg, lreg, rreg);
-		break;
+	switch(node->nature){
+		case NODE_LIST:
+			gen_decl_list(node->opr[0]);
+			printf("return to gen_decl_list\n");
 
-	case NODE_GT:
-		create_inst_comment("greater than");
-		if (lreg_available) {
-			create_inst_slt(lreg, rreg, lreg);
-			release_reg();
-		} else
-			create_inst_slt(rreg, rreg, lreg);
-		break;
+			gen_decl(node->opr[1]);
+			printf("return to gen_decl_list\n");break;
 
-	case NODE_LE:
-		create_inst_comment("less or equal");
-		if (lreg_available) {
-			create_inst_slt(lreg, rreg, lreg);
-			create_inst_xori(lreg, lreg, 1);
-			release_reg();
-		} else {
-			create_inst_slt(rreg, rreg, lreg);
-			create_inst_xori(rreg, rreg, 1);
-		}
-		break;
+		case NODE_DECL:
+			if(node->opr[1] != NULL && is_global == 1)
+				inst_create_word(node->opr[0]->ident, node->opr[1]->value);
+			else if (is_global == 1)
+				inst_create_word(node->opr[0]->ident, 0);//if there is no NODE_INTVAL
 
-	case NODE_GE:
-		create_inst_comment("greater or equal");
-		if (lreg_available) {
-			create_inst_slt(lreg, lreg, rreg);
-			create_inst_xori(lreg, lreg, 1);
-			release_reg();
-		} else {
-			create_inst_slt(rreg, lreg, rreg);
-			create_inst_xori(rreg, rreg, 1);
-		}
-		break;
+			gen_ident(node->opr[0]);
+			printf("return to gen_decl_list\n");
 
-	case NODE_EQ:
-		create_inst_comment("equal");
-		if (lreg_available) {
-			create_inst_xor(lreg, lreg, rreg);
-			create_inst_sltiu(lreg, lreg, 1);
-			release_reg();
-		} else {
-			create_inst_xor(rreg, lreg, rreg);
-			create_inst_sltiu(rreg, rreg, 1);
-		}
-		break;
+			gen_exp(node->opr[1]);
+			printf("return to gen_decl_list\n");
 
-	case NODE_NE:
-		create_inst_comment("not equal");
-		if (lreg_available) {
-			create_inst_xor(lreg, lreg, rreg);
-			create_inst_sltu(lreg, $zero, lreg);
-			release_reg();
-		} else {
-			create_inst_xor(rreg, lreg, rreg);
-			create_inst_sltu(rreg, $zero, rreg);
-		}
-		break;
+			push_temporary(get_current_reg());
+			release_reg();break;
 
-	case NODE_AND: case NODE_BAND:
-		create_inst_comment("and");
-		if (lreg_available) {
-			create_inst_and(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_and(rreg, lreg, rreg);
-		break;
-
-	case NODE_OR: case NODE_BOR:
-		create_inst_comment("or");
-		if (lreg_available) {
-			create_inst_or(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_or(rreg, lreg, rreg);
-		break;
-
-	case NODE_BXOR:
-		create_inst_comment("xor");
-		if (lreg_available) {
-			create_inst_xor(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_xor(rreg, lreg, rreg);
-		break;
-
-	case NODE_SLL:
-		create_inst_comment("sll");
-		if (lreg_available) {
-			create_inst_sllv(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_sllv(rreg, lreg, rreg);
-		break;
-
-	case NODE_SRA:
-		create_inst_comment("sra");
-		if (lreg_available) {
-			create_inst_srav(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_srav(rreg, lreg, rreg);
-		break;
-
-	case NODE_SRL:
-		create_inst_comment("srl");
-		if (lreg_available) {
-			create_inst_srlv(lreg, lreg, rreg);
-			release_reg();
-		} else
-			create_inst_srlv(rreg, lreg, rreg);
-		break;
 	}
+	return;
 }
 
-void for_handler(node_t root)
-{
-	int for_start = label_num++;
-	int for_end = label_num++;
-	gen_code_passe_2(root->opr[0]);
-	create_inst_label(for_start);				// For loop begin
-	gen_code_passe_2(root->opr[1]);				// Expression
-	create_inst_beq(get_current_reg(), $zero, for_end);	// Check condition
-	gen_code_passe_2(root->opr[3]);				// Last instruction
-	gen_code_passe_2(root->opr[2]);				// Inside loop
-	create_inst_j(for_start);
-	create_inst_label(for_end);				// For loop end
+void gen_decl(node_t node){
+	printf("start gen_decl\n");	
+	
+	assert(node->nature ==NODE_DECL); 
+
+	
+	switch(node->nature){
+		case NODE_DECL:
+			gen_ident(node->opr[0]);
+			printf("return to gen_decl\n");
+
+			gen_exp(node->opr[1]);
+			printf("return to gen_decl\n");
+
+			// push_temporary(get_current_reg()-1);
+			// release_reg();break;
+
+	}
+
+	return;
 }
 
-void while_handler(node_t root)
-{
-	int while_start = label_num++;
-	int while_end = label_num++;
-	create_inst_label(while_start);
-	gen_code_passe_2(root->opr[0]);				// Check condition
-	create_inst_beq(get_current_reg(), $zero, while_end);
-	gen_code_passe_2(root->opr[1]);
-	create_inst_j(while_start);
-	create_inst_label(while_end);
+void gen_main(node_t node){
+	printf("start gen_main\n");	
+	assert(node->nature == NODE_FUNC);
+
+	is_global = 0;// in main , all variable are not global var.
+
+	//inst_create_or($fp, $zero, $sp);
+	set_temporary_start_offset(node->offset);
+	inst_create_stack_allocation();
+	// printf("%d\n",get_temporary_max_offset());
+	//	printf("%d\n",node->offset);
+
+
+	switch(node->nature){
+		case NODE_FUNC:
+			gen_type(node->opr[0]);
+			printf("return to gen_main\n");
+			gen_ident(node->opr[1]);
+			printf("return to gen_main\n");
+
+			gen_block(node->opr[2]);	
+			printf("return to gen_main\n");break;
+
+	}
+
+	// printf("%d\n",node->offset);
+
+
+	int32_t stack_size = get_temporary_max_offset();
+	printf("%d\n",get_temporary_max_offset());
+
+	inst_create_stack_deallocation(stack_size);
+
+	return;
 }
 
-void do_while_handler(node_t root)
-{
-	int loop_start = label_num++;
-	create_inst_label(loop_start);
-	gen_code_passe_2(root->opr[0]);
-	gen_code_passe_2(root->opr[1]);
-	create_inst_bne(get_current_reg(), $zero, loop_start);
+void gen_type(node_t node){
+	printf("start gen_type\n");	
+
+	assert(node->nature ==NODE_TYPE);
+
+	return;
+ }
+
+void gen_ident(node_t node){
+	printf("start gen_ident\n");	
+
+	assert(node->nature ==NODE_IDENT); 
+
+
+	return;
 }
 
-void if_handler(node_t root)
-{
-	int false_label = label_num++;
-	int end_if_label = label_num++;
-	gen_code_passe_2(root->opr[0]);					// Condition
-	create_inst_beq(get_current_reg(), $zero, false_label);
-	gen_code_passe_2(root->opr[1]);
-	create_inst_j(end_if_label);
-	create_inst_label(false_label);
-	if (root->nops > 2)
-		gen_code_passe_2(root->opr[2]);
-	create_inst_label(end_if_label);
+void gen_block(node_t node){
+	printf("start gen_block\n");	
+
+	assert(node->nature ==NODE_BLOCK);
+
+	switch(node->nature){
+		case NODE_BLOCK:
+			gen_vardecls(node->opr[0]);
+			printf("return to gen_block\n");
+
+			gen_insts(node->opr[1]);
+			printf("return to gen_block\n");break;
+
+	}
+
+	return;
+}
+
+void gen_insts(node_t node){
+	printf("start gen_insts\n");	
+
+	assert(		node == NULL 
+				|| node->nature == NODE_LIST 	
+				|| node->nature == NODE_IF
+				|| node->nature == NODE_WHILE
+				|| node->nature == NODE_DOWHILE
+				|| node->nature == NODE_FOR
+				|| node->nature == NODE_PRINT
+				|| node->nature == NODE_BLOCK	//block
+				|| node->nature == NODE_PLUS	//exp
+				|| node->nature == NODE_MINUS
+				|| node->nature == NODE_MUL
+				|| node->nature == NODE_DIV
+				|| node->nature == NODE_MOD
+				|| node->nature == NODE_UMINUS
+				|| node->nature == NODE_LT
+				|| node->nature == NODE_GT
+				|| node->nature == NODE_LE
+				|| node->nature == NODE_GE 
+				|| node->nature == NODE_EQ
+				|| node->nature == NODE_NE
+				|| node->nature == NODE_AND
+				|| node->nature == NODE_OR 
+				|| node->nature == NODE_BAND
+				|| node->nature == NODE_BOR
+				|| node->nature == NODE_BXOR
+				|| node->nature == NODE_SRL
+				|| node->nature == NODE_SRA
+				|| node->nature == NODE_NOT
+				|| node->nature == NODE_BNOT
+				|| node->nature == NODE_AFFECT
+				|| node->nature == NODE_INTVAL
+				|| node->nature == NODE_BOOLVAL
+				|| node->nature == NODE_IDENT	//ident
+			); 
+	
+	if(node == NULL){
+		return;
+	}
+
+	switch(node->nature){
+		case NODE_LIST:
+			gen_insts_list(node->opr[0]);printf("return to gen_insts\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts\n");break;
+		case NODE_IF:
+			gen_exp(node->opr[0]);printf("return to gen_insts\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts\n");
+			if(node->opr[2] != NULL){
+				gen_inst(node->opr[2]);printf("return to gen_insts\n");
+			}	
+			break;
+		case NODE_WHILE:
+			gen_exp(node->opr[0]);printf("return to gen_insts\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts\n");break;
+		case NODE_DOWHILE:
+			gen_inst(node->opr[0]);printf("return to gen_insts\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts\n");break;
+		case NODE_FOR:
+			gen_exp(node->opr[0]);printf("return to gen_insts\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts\n");
+			gen_exp(node->opr[2]);printf("return to gen_insts\n");
+			gen_inst(node->opr[3]);printf("return to gen_insts\n");break;
+		case NODE_PRINT:
+			gen_printparam_list(node->opr[0]);printf("return to gen_insts\n");break;
+		case NODE_BLOCK:
+			gen_vardecls(node->opr[0]);printf("return to gen_insts\n");
+			gen_insts(node->opr[1]);printf("return to gen_insts\n");break;
+		case NODE_PLUS:
+		case NODE_MINUS:
+		case NODE_MUL:
+		case NODE_DIV:
+		case NODE_MOD:
+		case NODE_LT:
+		case NODE_GT:
+		case NODE_LE:
+		case NODE_GE:
+		case NODE_EQ:
+		case NODE_NE:
+		case NODE_AND:
+		case NODE_OR:
+		case NODE_BAND:
+		case NODE_BOR:
+		case NODE_BXOR:
+		case NODE_SRL:
+		case NODE_SRA:
+			gen_exp(node->opr[0]);printf("return to gen_insts\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts\n");
+			//node->type = type_op_binaire(node->nature, node->opr[0], node->opr[1]);
+			break;
+		case NODE_NOT:
+		case NODE_BNOT:
+		case NODE_UMINUS:
+			gen_exp(node->opr[0]);printf("return to gen_insts\n");
+			//node->type = type_op_unaire(node->nature, node->opr[0]);
+			break;
+
+		case NODE_AFFECT:
+			gen_ident(node->opr[0]);printf("return to gen_insts\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts\n");
+			push_temporary(get_current_reg());
+			release_reg();
+			//node->type = type_op_binaire(node->nature, node->opr[0], node->opr[1]);
+			break;
+		case NODE_INTVAL:					
+			reg_for_intval(node);
+			break;
+		case NODE_BOOLVAL:
+			return;
+		case NODE_IDENT:	
+			gen_ident(node);
+			return;
+	}
+	return;
+}
+
+void gen_insts_list(node_t node){
+	printf("start gen_insts_list\n");	
+
+	assert(		node->nature == NODE_LIST 	
+				|| node->nature == NODE_IF
+				|| node->nature == NODE_WHILE
+				|| node->nature == NODE_DOWHILE
+				|| node->nature == NODE_FOR
+				|| node->nature == NODE_PRINT
+				|| node->nature == NODE_BLOCK	//block
+				|| node->nature == NODE_PLUS	//exp
+				|| node->nature == NODE_MINUS
+				|| node->nature == NODE_MUL
+				|| node->nature == NODE_DIV
+				|| node->nature == NODE_MOD
+				|| node->nature == NODE_UMINUS
+				|| node->nature == NODE_LT
+				|| node->nature == NODE_GT
+				|| node->nature == NODE_LE
+				|| node->nature == NODE_GE 
+				|| node->nature == NODE_EQ
+				|| node->nature == NODE_NE
+				|| node->nature == NODE_AND
+				|| node->nature == NODE_OR 
+				|| node->nature == NODE_BAND
+				|| node->nature == NODE_BOR
+				|| node->nature == NODE_BXOR
+				|| node->nature == NODE_SRL
+				|| node->nature == NODE_SRA
+				|| node->nature == NODE_NOT
+				|| node->nature == NODE_BNOT
+				|| node->nature == NODE_AFFECT
+				|| node->nature == NODE_INTVAL
+				|| node->nature == NODE_BOOLVAL
+				|| node->nature == NODE_IDENT	//ident
+			);  
+	switch(node->nature){
+		case NODE_LIST:
+			gen_insts_list(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts_list\n");break;
+		case NODE_IF:
+			gen_exp(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts_list\n");
+			if(node->opr[2] != NULL){
+				gen_inst(node->opr[2]);printf("return to gen_insts_list");
+			}	
+			break;
+		case NODE_WHILE:
+			gen_exp(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_inst(node->opr[1]);printf("return to gen_insts_list\n");break;
+		case NODE_DOWHILE:
+			gen_inst(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts_list\n");break;
+		case NODE_FOR:
+			gen_exp(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts_list\n");
+			gen_exp(node->opr[2]);printf("return to gen_insts_list\n");
+			gen_inst(node->opr[3]);printf("return to gen_insts_list\n");break;
+		case NODE_PRINT:
+			gen_printparam_list(node->opr[0]);printf("return to gen_insts_list\n");break;
+		case NODE_BLOCK:
+			gen_vardecls(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_insts(node->opr[1]);printf("return to gen_insts_list\n");break;
+		case NODE_PLUS:
+		case NODE_MINUS:
+		case NODE_MUL:
+		case NODE_DIV:
+		case NODE_MOD:
+		case NODE_LT:
+		case NODE_GT:
+		case NODE_LE:
+		case NODE_GE:
+		case NODE_EQ:
+		case NODE_NE:
+		case NODE_AND:
+		case NODE_OR:
+		case NODE_BAND:
+		case NODE_BOR:
+		case NODE_BXOR:
+		case NODE_SRL:
+		case NODE_SRA:
+			gen_exp(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts_list\n");
+			reg_for_exp_binaire(node);break;
+
+		case NODE_UMINUS:
+		case NODE_NOT:
+		case NODE_BNOT:
+			gen_exp(node->opr[0]);printf("return to gen_insts_list\n");break;
+		case NODE_AFFECT:
+			gen_ident(node->opr[0]);printf("return to gen_insts_list\n");
+			gen_exp(node->opr[1]);printf("return to gen_insts_list\n");
+			push_temporary(get_current_reg());
+			release_reg();break;
+		case NODE_INTVAL:
+			reg_for_intval(node);
+			break;
+		case NODE_BOOLVAL:
+			return;
+		case NODE_IDENT:
+			gen_ident(node);
+			return;
+	}
+	return;
+}
+
+void gen_inst(node_t node){
+	printf("start gen_inst\n");	
+
+	assert(		node->nature == NODE_IF
+				|| node->nature == NODE_IF
+				|| node->nature == NODE_WHILE
+				|| node->nature == NODE_DOWHILE
+				|| node->nature == NODE_FOR
+				|| node->nature == NODE_PRINT
+				|| node->nature == NODE_BLOCK	//block
+				|| node->nature == NODE_PLUS	//exp
+				|| node->nature == NODE_MINUS
+				|| node->nature == NODE_MUL
+				|| node->nature == NODE_DIV
+				|| node->nature == NODE_MOD
+				|| node->nature == NODE_UMINUS
+				|| node->nature == NODE_LT
+				|| node->nature == NODE_GT
+				|| node->nature == NODE_LE
+				|| node->nature == NODE_GE 
+				|| node->nature == NODE_EQ
+				|| node->nature == NODE_NE
+				|| node->nature == NODE_AND
+				|| node->nature == NODE_OR 
+				|| node->nature == NODE_BAND
+				|| node->nature == NODE_BOR
+				|| node->nature == NODE_BXOR
+				|| node->nature == NODE_SRL
+				|| node->nature == NODE_SRA
+				|| node->nature == NODE_NOT
+				|| node->nature == NODE_BNOT
+				|| node->nature == NODE_AFFECT
+				|| node->nature == NODE_INTVAL
+				|| node->nature == NODE_BOOLVAL
+				|| node->nature == NODE_IDENT	//ident
+			);  
+	switch(node->nature){
+		case NODE_IF:
+			gen_exp(node->opr[0]);printf("return to gen_inst\n");
+			gen_inst(node->opr[1]);printf("return to gen_inst\n");
+			if(node->opr[2] != NULL){
+				gen_inst(node->opr[2]);printf("return to gen_inst\n");
+			}	
+			break;
+		case NODE_WHILE:
+			gen_exp(node->opr[0]);printf("return to gen_inst\n");
+			gen_inst(node->opr[1]);printf("return to gen_inst\n");break;
+		case NODE_DOWHILE:
+			gen_inst(node->opr[0]);printf("return to gen_inst\n");
+			gen_exp(node->opr[1]);printf("return to gen_inst\n");break;
+		case NODE_FOR:
+			gen_exp(node->opr[0]);printf("return to gen_inst\n");
+			gen_exp(node->opr[1]);printf("return to gen_inst\n");
+			gen_exp(node->opr[2]);printf("return to gen_inst\n");
+			gen_inst(node->opr[3]);printf("return to gen_inst\n");break;
+		case NODE_PRINT:
+			gen_printparam_list(node->opr[0]);printf("return to gen_inst\n");break;
+		case NODE_BLOCK:
+			gen_vardecls(node->opr[0]);printf("return to gen_inst\n");
+			gen_insts(node->opr[1]);printf("return to gen_inst\n");break;
+		case NODE_PLUS:
+		case NODE_MINUS:
+		case NODE_MUL:
+		case NODE_DIV:
+		case NODE_MOD:
+		case NODE_LT:
+		case NODE_GT:
+		case NODE_LE:
+		case NODE_GE:
+		case NODE_EQ:
+		case NODE_NE:
+		case NODE_AND:
+		case NODE_OR:
+		case NODE_BAND:
+		case NODE_BOR:
+		case NODE_BXOR:
+		case NODE_SRL:
+		case NODE_SRA:
+			gen_exp(node->opr[0]);printf("return to gen_inst\n");
+			gen_exp(node->opr[1]);printf("return to gen_inst\n");
+			reg_for_exp_binaire(node);break;
+
+		case NODE_UMINUS:
+		case NODE_NOT:
+		case NODE_BNOT:
+			gen_exp(node->opr[0]);printf("return to gen_inst\n");break;
+		case NODE_AFFECT:
+			gen_ident(node->opr[0]);printf("return to gen_inst\n");
+			gen_exp(node->opr[1]);printf("return to gen_inst\n");
+			push_temporary(get_current_reg());
+			release_reg();break;
+		case NODE_INTVAL:
+			reg_for_intval(node);
+			break;
+		case NODE_BOOLVAL:
+			return;
+		case NODE_IDENT:
+			gen_ident(node);
+			return;
+	}
+	return;
+}
+
+void gen_printparam_list(node_t node){
+	printf("start gen_printparam_list\n");	
+
+	assert(node->nature ==NODE_LIST || node->nature ==NODE_STRINGVAL || node->nature ==NODE_IDENT); 
+
+	switch(node->nature){
+		case NODE_LIST:
+			gen_printparam_list(node->opr[0]);printf("return to gen_printparam_list\n");
+			gen_printparam(node->opr[1]);printf("return to gen_printparam_list\n");break;
+		case NODE_STRINGVAL:
+			//node->offset = add_string(node->str);
+			return;
+		case NODE_IDENT:
+			gen_ident(node);
+			return;
+	}
+	return;
+}
+
+void gen_printparam(node_t node){
+	printf("start gen_printparam\n");	
+
+	assert(node->nature ==NODE_STRINGVAL || node->nature ==NODE_IDENT); 
+
+	switch(node->nature){
+		case NODE_STRINGVAL:
+			//node->offset = add_string(node->str);
+			return;
+		case NODE_IDENT:
+			gen_ident(node);
+			return;
+	}
+	return;
+}
+
+void gen_exp(node_t node){
+	printf("start gen_exp\n");	
+
+	assert(		node == NULL
+				||node->nature == NODE_PLUS	//exp
+				|| node->nature == NODE_MINUS
+				|| node->nature == NODE_MUL
+				|| node->nature == NODE_DIV
+				|| node->nature == NODE_MOD
+				|| node->nature == NODE_UMINUS
+				|| node->nature == NODE_LT
+				|| node->nature == NODE_GT
+				|| node->nature == NODE_LE
+				|| node->nature == NODE_GE 
+				|| node->nature == NODE_EQ
+				|| node->nature == NODE_NE
+				|| node->nature == NODE_AND
+				|| node->nature == NODE_OR 
+				|| node->nature == NODE_BAND
+				|| node->nature == NODE_BOR
+				|| node->nature == NODE_BXOR
+				|| node->nature == NODE_SRL
+				|| node->nature == NODE_SRA
+				|| node->nature == NODE_NOT
+				|| node->nature == NODE_BNOT
+				|| node->nature == NODE_AFFECT
+				|| node->nature == NODE_INTVAL
+				|| node->nature == NODE_BOOLVAL
+				|| node->nature == NODE_IDENT	//ident
+			); 
+
+	if(node == NULL){
+		return;
+	}
+
+	switch(node->nature){
+		case NODE_PLUS:
+		case NODE_MINUS:
+		case NODE_MUL:
+		case NODE_DIV:
+		case NODE_MOD:
+		case NODE_LT:
+		case NODE_GT:
+		case NODE_LE:
+		case NODE_GE:
+		case NODE_EQ:
+		case NODE_NE:
+		case NODE_AND:
+		case NODE_OR:
+		case NODE_BAND:
+		case NODE_BOR:
+		case NODE_BXOR:
+		case NODE_SRL:
+		case NODE_SRA:
+			gen_exp(node->opr[0]);printf("return to gen_exp\n");
+			gen_exp(node->opr[1]);printf("return to gen_exp\n");
+			reg_for_exp_binaire(node);break;
+
+		case NODE_UMINUS:
+		case NODE_NOT:
+		case NODE_BNOT:
+			gen_exp(node->opr[0]);printf("return to gen_exp\n");break;
+		case NODE_AFFECT:
+			gen_ident(node->opr[0]);printf("return to gen_exp\n");
+			gen_exp(node->opr[1]);printf("return to gen_exp\n");
+			push_temporary(get_current_reg());
+			release_reg();break;
+		case NODE_INTVAL:
+			reg_for_intval(node);
+			break;
+		case NODE_BOOLVAL:
+			return;
+		case NODE_IDENT:
+			gen_ident(node);
+			return;
+	}
+
+	return;
+}
+
+
+void reg_for_intval(node_t node){
+	int reg;
+	reg =get_current_reg();
+
+	// printf("%d-----------------\n",reg_available());
+	if(reg_available()){
+		allocate_reg();
+	}
+	else
+		reg = get_restore_reg();
+	if(node->global_decl == 0)
+		inst_create_ori(reg, $zero, node->value);
+	return;
+}
+
+void reg_for_exp_binaire(node_t node){
+	int reg1,reg2;
+
+	//for reg1
+	reg1 =get_current_reg();
+	//for reg2
+	release_reg();
+
+	reg2 =get_current_reg();
+
+	switch(node->nature){
+		case NODE_PLUS:
+			inst_create_addu(reg1,reg1,reg2);
+			break;
+		case NODE_MINUS:
+			inst_create_subu(reg1,reg1,reg2);break;
+		case NODE_MUL:
+			inst_create_mult(reg1,reg2);
+			inst_create_mflo(reg1);break;
+		case NODE_DIV:
+			inst_create_div(reg1,reg2);
+			inst_create_teq(reg2, $zero);
+			inst_create_mflo(reg1);break;
+			break;
+		case NODE_MOD:
+			inst_create_div(reg1, reg2);
+			inst_create_teq(reg2, $zero);
+			inst_create_mfhi(reg1);break;
+			break;
+		case NODE_LT:
+			inst_create_slt(reg1,reg1,reg2);break;
+		case NODE_GT:
+			inst_create_slt(reg1,reg2,reg1);break;
+		case NODE_LE:
+			inst_create_slt(reg1,reg2,reg1);
+			inst_create_xori(reg1,reg1,1);
+			break;
+		case NODE_GE:
+			inst_create_slt(reg1,reg1,reg2);
+			inst_create_xori(reg1,reg1,1);
+			break;
+		case NODE_EQ:
+			inst_create_xor(reg1,reg1,reg2);
+			inst_create_sltiu(reg1,reg2,1);
+			break;
+		case NODE_NE:
+			inst_create_xor(reg1,reg1,reg2);
+			inst_create_sltu(reg1,$zero,reg1);break;
+		case NODE_AND:
+			inst_create_and(reg1,reg1,reg2);break;
+		case NODE_OR:
+			inst_create_or(reg1,reg1,reg2);;break;
+		case NODE_BAND:
+			inst_create_and(reg1,reg1,reg2);break;
+		case NODE_BOR:
+			inst_create_or(reg1,reg1,reg2);break;
+		case NODE_BXOR:
+			inst_create_xor(reg1,reg1,reg2);break;
+		case NODE_SRL:
+			inst_create_srlv(reg1,reg1,reg2);break;
+		case NODE_SRA:
+			inst_create_srav(reg1,reg1,reg2);break;
+		case NODE_SLL:
+			inst_create_sllv(reg1,reg1,reg2);break;
+
+	}
+	//push_temporary(reg1);
+	//release_reg(reg1);
+	//release_reg(reg2);
+
+	return;
 }

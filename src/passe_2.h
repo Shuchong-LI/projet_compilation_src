@@ -3,8 +3,6 @@
 
 #include "defs.h"
 
-#define DATA_SECTION_BASE_ADDRESS 0x1001
-
 #define $zero 0
 #define $at 1
 #define $v0 2
@@ -43,6 +41,25 @@
 #define EXIT_SYSCALL 10
 
 void gen_code_passe_2(node_t root);
+void gen_vardecls(node_t node);
+void gen_decls_list(node_t node);
+void gen_decls(node_t node);
+void gen_decl_list(node_t node);
+void gen_decl(node_t node);
+void gen_main(node_t node);
+void gen_type(node_t node);
+void gen_ident(node_t node);
+void gen_block(node_t node);
+void gen_insts(node_t node);
+void gen_insts_list(node_t node);
+void gen_inst(node_t node);
+void gen_printparam_list(node_t node);
+void gen_printparam(node_t node);
+void gen_exp(node_t node);
+void reg_for_intval(node_t node);
+void reg_for_exp_binaire(node_t node);
+
+
 
 #endif
 
